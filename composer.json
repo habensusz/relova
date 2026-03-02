@@ -1,7 +1,6 @@
 {
     "name": "relova/core",
     "description": "Relova — Universal Data Connector Platform. Virtual-first data federation for Laravel applications.",
-    "version": "1.0.0",
     "type": "library",
     "license": "proprietary",
     "keywords": ["data-connector", "federation", "virtual", "database", "laravel"],

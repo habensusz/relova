@@ -23,6 +23,17 @@ class SecurityService
             return; // File-based connectors have no host
         }
 
+        // Allow disabling SSRF protection entirely (local dev only)
+        if (! config('relova.ssrf_protection', true)) {
+            return;
+        }
+
+        // Explicitly whitelisted hosts bypass the IP range check
+        $allowedHosts = config('relova.ssrf_allowed_hosts', []);
+        if (in_array($host, (array) $allowedHosts, strict: true)) {
+            return;
+        }
+
         // Resolve hostname to IP(s)
         $ips = $this->resolveHost($host);
 

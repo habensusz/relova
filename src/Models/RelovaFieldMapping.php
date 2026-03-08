@@ -73,6 +73,53 @@ class RelovaFieldMapping extends Model
     }
 
     /**
+     * Check whether a given column mapping entry defines a belongs_to relation.
+     * Entries with relation_type = 'belongs_to' mean the raw remote value should
+     * be resolved to a local model id rather than stored as-is.
+     *
+     * @param  array<string, mixed>  $entry  A single column_mappings entry.
+     */
+    public function isRelationMapping(array $entry): bool
+    {
+        return ($entry['relation_type'] ?? null) === 'belongs_to';
+    }
+
+    /**
+     * Return all column_mapping entries that define belongs_to relations.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getRelationMappings(): array
+    {
+        return collect($this->column_mappings ?? [])
+            ->filter(fn (array $entry) => $this->isRelationMapping($entry))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Return all column_mapping entries that are direct value copies (no relation).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getDirectMappings(): array
+    {
+        return collect($this->column_mappings ?? [])
+            ->reject(fn (array $entry) => $this->isRelationMapping($entry))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Expose transformation logic publicly so MappingDataLoader can call it
+     * per-field without processing the entire row.
+     */
+    public function applyTransformationPublic(string $field, mixed $value): mixed
+    {
+        return $this->applyTransformation($field, $value);
+    }
+
+    /**
      * Apply this mapping to a remote row, returning local-field-keyed data.
      *
      * @return array<string, mixed>

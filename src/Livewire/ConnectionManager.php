@@ -1,0 +1,375 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Relova\Livewire;
+
+use Livewire\Component;
+use Relova\Models\RelovaConnection;
+use Relova\Services\DriverRegistry;
+use Relova\Services\RelovaConnectionManager;
+
+/**
+ * Livewire component for managing Relova connections within itenance.
+ * CRUD interface for creating, editing, testing, and monitoring connections.
+ */
+class ConnectionManager extends Component
+{
+    public array $connections = [];
+
+    public bool $showForm = false;
+
+    public bool $editing = false;
+
+    public ?string $editingUid = null;
+
+    // Form fields
+    public string $name = '';
+
+    public string $description = '';
+
+    public string $driver_type = 'pgsql';
+
+    public string $host = '';
+
+    public ?int $port = 5432;
+
+    public string $database_name = '';
+
+    public string $schema_name = '';
+
+    public string $username = '';
+
+    public string $password = '';
+
+    public int $cache_ttl = 300;
+
+    public string $query_mode = 'virtual';
+
+    public bool $enabled = false;
+
+    // SSH Tunnel fields
+    public bool $ssh_enabled = false;
+
+    public string $ssh_host = '';
+
+    public int $ssh_port = 22;
+
+    public string $ssh_user = 'forge';
+
+    public string $ssh_auth_method = 'key';
+
+    public string $ssh_password = '';
+
+    public string $ssh_private_key = '';
+
+    public string $ssh_passphrase = '';
+
+    // State
+    public ?string $testResult = null;
+
+    public ?string $testMessage = null;
+
+    protected function rules(): array
+    {
+        return [
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string|max:1000',
+            'driver_type' => 'required|string',
+            'host' => 'required|string|max:255',
+            'port' => 'nullable|integer|min:1|max:65535',
+            'database_name' => 'required|string|max:255',
+            'schema_name' => 'nullable|string|max:255',
+            'username' => 'required|string|max:255',
+            'password' => $this->editing ? 'nullable|string|max:255' : 'required|string|max:255',
+            'cache_ttl' => 'integer|min:0|max:86400',
+            'query_mode' => 'required|in:virtual,snapshot,on_demand',
+            'enabled' => 'boolean',
+            'ssh_enabled' => 'boolean',
+            'ssh_host' => 'nullable|string|max:255',
+            'ssh_port' => 'nullable|integer|min:1|max:65535',
+            'ssh_user' => 'nullable|string|max:255',
+            'ssh_auth_method' => 'nullable|in:password,key',
+            'ssh_password' => 'nullable|string',
+            'ssh_private_key' => 'nullable|string',
+            'ssh_passphrase' => 'nullable|string',
+        ];
+    }
+
+    public function mount(): void
+    {
+        $this->loadConnections();
+    }
+
+    public function loadConnections(): void
+    {
+        $this->connections = RelovaConnection::orderBy('name')
+            ->get()
+            ->toArray();
+    }
+
+    public function openCreateForm(): void
+    {
+        $this->resetForm();
+        $this->showForm = true;
+        $this->editing = false;
+    }
+
+    public function openEditForm(string $uid): void
+    {
+        $connection = RelovaConnection::where('uid', $uid)->firstOrFail();
+
+        $this->editingUid = $uid;
+        $this->editing = true;
+        $this->showForm = true;
+
+        $this->name = $connection->name;
+        $this->description = $connection->description ?? '';
+        $this->driver_type = $connection->driver_type;
+        $this->host = $connection->host ?? '';
+        $this->port = $connection->port;
+        $this->database_name = $connection->database_name ?? '';
+        $this->schema_name = $connection->schema_name ?? '';
+        $this->username = $connection->username ?? '';
+        $this->password = '';
+        $this->cache_ttl = $connection->cache_ttl ?? 300;
+        $this->query_mode = $connection->query_mode ?? 'virtual';
+        $this->enabled = $connection->enabled;
+
+        // SSH tunnel
+        $this->ssh_enabled = (bool) $connection->ssh_enabled;
+        $this->ssh_host = $connection->ssh_host ?? '';
+        $this->ssh_port = $connection->ssh_port ?? 22;
+        $this->ssh_user = $connection->ssh_user ?? 'forge';
+        $this->ssh_auth_method = $connection->ssh_auth_method ?? 'key';
+        $this->ssh_password = '';
+        $this->ssh_private_key = '';
+        $this->ssh_passphrase = '';
+    }
+
+    public function save(): void
+    {
+        $this->validate();
+
+        $data = [
+            'name' => $this->name,
+            'description' => $this->description ?: null,
+            'driver_type' => $this->driver_type,
+            'host' => $this->host,
+            'port' => $this->port,
+            'database_name' => $this->database_name,
+            'schema_name' => $this->schema_name ?: null,
+            'username' => $this->username,
+            'cache_ttl' => $this->cache_ttl,
+            'query_mode' => $this->query_mode,
+            'enabled' => $this->enabled,
+            'ssh_enabled' => $this->ssh_enabled,
+            'ssh_host' => $this->ssh_host ?: null,
+            'ssh_port' => $this->ssh_port ?? 22,
+            'ssh_user' => $this->ssh_user ?: null,
+            'ssh_auth_method' => $this->ssh_auth_method ?: 'key',
+        ];
+
+        if ($this->editing && $this->editingUid) {
+            $connection = RelovaConnection::where('uid', $this->editingUid)->firstOrFail();
+            $connection->update($data);
+
+            if ($this->password) {
+                $connection->password = $this->password;
+                $connection->save();
+            }
+
+            if ($this->ssh_private_key) {
+                $connection->sshPrivateKey = $this->ssh_private_key;
+                $connection->save();
+            }
+
+            if ($this->ssh_password) {
+                $connection->sshPassword = $this->ssh_password;
+                $connection->save();
+            }
+
+            if ($this->ssh_passphrase) {
+                $connection->sshPassphrase = $this->ssh_passphrase;
+                $connection->save();
+            }
+        } else {
+            $connection = RelovaConnection::create($data);
+            $connection->password = $this->password;
+
+            if ($this->ssh_private_key) {
+                $connection->sshPrivateKey = $this->ssh_private_key;
+            }
+
+            if ($this->ssh_password) {
+                $connection->sshPassword = $this->ssh_password;
+            }
+
+            if ($this->ssh_passphrase) {
+                $connection->sshPassphrase = $this->ssh_passphrase;
+            }
+
+            $connection->save();
+        }
+
+        $this->showForm = false;
+        $this->loadConnections();
+        $this->dispatch('notify', message: __('relova::relova.connection_saved'));
+    }
+
+    public function testConnectionFromForm(): void
+    {
+        $connection = new RelovaConnection([
+            'driver_type' => $this->driver_type,
+            'host' => $this->host,
+            'port' => $this->port,
+            'database_name' => $this->database_name,
+            'schema_name' => $this->schema_name,
+            'username' => $this->username,
+            'ssh_enabled' => $this->ssh_enabled,
+            'ssh_host' => $this->ssh_host ?: null,
+            'ssh_port' => $this->ssh_port ?? 22,
+            'ssh_user' => $this->ssh_user ?: null,
+            'ssh_auth_method' => $this->ssh_auth_method ?: 'key',
+        ]);
+
+        $connection->password = $this->password;
+
+        // When editing, fall back to stored password / SSH credentials if not re-entered
+        if ($this->editing && $this->editingUid) {
+            $existing = RelovaConnection::where('uid', $this->editingUid)->first();
+
+            if ($existing) {
+                if (! $this->password) {
+                    $connection->password = $existing->password;
+                }
+
+                if (! $this->ssh_private_key) {
+                    $connection->sshPrivateKey = $existing->sshPrivateKey;
+                } else {
+                    $connection->sshPrivateKey = $this->ssh_private_key;
+                }
+
+                if (! $this->ssh_password) {
+                    $connection->sshPassword = $existing->sshPassword;
+                } else {
+                    $connection->sshPassword = $this->ssh_password;
+                }
+
+                $connection->sshPassphrase = $this->ssh_passphrase ?: $existing->sshPassphrase;
+            }
+        } else {
+            if ($this->ssh_private_key) {
+                $connection->sshPrivateKey = $this->ssh_private_key;
+            }
+
+            if ($this->ssh_password) {
+                $connection->sshPassword = $this->ssh_password;
+            }
+
+            if ($this->ssh_passphrase) {
+                $connection->sshPassphrase = $this->ssh_passphrase;
+            }
+        }
+
+        try {
+            $manager = app(RelovaConnectionManager::class);
+            $manager->testUnsaved($connection);
+
+            $this->testResult = 'success';
+            $this->testMessage = __('relova::relova.test_success');
+        } catch (\Exception $e) {
+            $this->testResult = 'error';
+            $this->testMessage = $e->getMessage();
+        }
+    }
+
+    public function testExistingConnection(string $uid): void
+    {
+        $connection = RelovaConnection::where('uid', $uid)->firstOrFail();
+        $manager = app(RelovaConnectionManager::class);
+
+        $result = $manager->test($connection);
+
+        $this->loadConnections();
+
+        $this->dispatch('notify', message: $result
+            ? __('relova::relova.test_success')
+            : __('relova::relova.test_failed')
+        );
+    }
+
+    public function deleteConnection(string $uid): void
+    {
+        RelovaConnection::where('uid', $uid)->delete();
+        $this->loadConnections();
+        $this->dispatch('notify', message: __('relova::relova.connection_deleted'));
+    }
+
+    public function toggleConnection(string $uid): void
+    {
+        $connection = RelovaConnection::where('uid', $uid)->firstOrFail();
+        $connection->update(['enabled' => ! $connection->enabled]);
+        $this->loadConnections();
+    }
+
+    public function closeForm(): void
+    {
+        $this->showForm = false;
+        $this->resetForm();
+    }
+
+    protected function resetForm(): void
+    {
+        $this->editingUid = null;
+        $this->editing = false;
+        $this->name = '';
+        $this->description = '';
+        $this->driver_type = 'pgsql';
+        $this->host = '';
+        $this->port = 5432;
+        $this->database_name = '';
+        $this->schema_name = '';
+        $this->username = '';
+        $this->password = '';
+        $this->cache_ttl = 300;
+        $this->query_mode = 'virtual';
+        $this->enabled = false;
+        $this->ssh_enabled = false;
+        $this->ssh_host = '';
+        $this->ssh_port = 22;
+        $this->ssh_user = 'forge';
+        $this->ssh_auth_method = 'key';
+        $this->ssh_password = '';
+        $this->ssh_private_key = '';
+        $this->ssh_passphrase = '';
+        $this->testResult = null;
+        $this->testMessage = null;
+    }
+
+    public function updatedDriverType(): void
+    {
+        $registry = app(DriverRegistry::class);
+
+        try {
+            $driver = $registry->resolve($this->driver_type);
+            $this->port = $driver->getDefaultPort();
+        } catch (\Exception) {
+            // Keep current port
+        }
+    }
+
+    public function getDriverOptions(): array
+    {
+        $registry = app(DriverRegistry::class);
+
+        return $registry->getDriverInfo();
+    }
+
+    public function render(): \Illuminate\View\View
+    {
+        return view('relova::livewire.connection-manager', [
+            'driverOptions' => $this->getDriverOptions(),
+        ]);
+    }
+}

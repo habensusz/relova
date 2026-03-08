@@ -14,17 +14,22 @@ use Relova\Models\RelovaConnection;
  * Central connection manager. Handles opening connections, caching schema
  * metadata, and running health checks. Connections are opened on demand,
  * used, and closed. No persistent connection pool.
+ *
+ * When a connection has SSH enabled, all driver operations are automatically
+ * wrapped with an SSH port-forward tunnel. The tunnel is established, used
+ * for a single operation, and torn down immediately after.
  */
 class RelovaConnectionManager implements ConnectionManagerContract
 {
     public function __construct(
         protected DriverRegistry $driverRegistry,
         protected SecurityService $securityService,
+        protected SshTunnelService $sshTunnelService,
     ) {}
 
     public function connect(RelovaConnection $connection): ConnectorDriver
     {
-        $this->securityService->validateHost($connection->host);
+        $this->validateConnectionHost($connection);
 
         return $this->driverRegistry->resolve($connection->driver_type);
     }
@@ -32,10 +37,10 @@ class RelovaConnectionManager implements ConnectionManagerContract
     public function test(RelovaConnection $connection): bool
     {
         try {
-            $this->securityService->validateHost($connection->host);
+            $this->validateConnectionHost($connection);
 
             $driver = $this->driverRegistry->resolve($connection->driver_type);
-            $result = $driver->testConnection($connection->toDriverConfig());
+            $result = $this->withTunnel($connection, fn (array $config) => $driver->testConnection($config));
 
             $connection->update([
                 'health_status' => 'healthy',
@@ -63,15 +68,29 @@ class RelovaConnectionManager implements ConnectionManagerContract
         }
     }
 
+    /**
+     * Test an unsaved (transient) connection — throws on failure so the caller
+     * can surface the error message without any DB writes.
+     *
+     * @throws \Exception
+     */
+    public function testUnsaved(RelovaConnection $connection): void
+    {
+        $this->validateConnectionHost($connection);
+
+        $driver = $this->driverRegistry->resolve($connection->driver_type);
+        $this->withTunnel($connection, fn (array $config) => $driver->testConnection($config));
+    }
+
     public function getTables(RelovaConnection $connection): array
     {
         $cacheKey = "relova:tables:{$connection->id}";
         $ttl = $connection->cache_ttl ?? (int) config('relova.schema_cache_ttl', 300);
 
         return Cache::remember($cacheKey, $ttl, function () use ($connection) {
-            $driver = $this->connect($connection);
+            $driver = $this->driverRegistry->resolve($connection->driver_type);
 
-            return $driver->getTables($connection->toDriverConfig());
+            return $this->withTunnel($connection, fn (array $config) => $driver->getTables($config));
         });
     }
 
@@ -81,17 +100,17 @@ class RelovaConnectionManager implements ConnectionManagerContract
         $ttl = $connection->cache_ttl ?? (int) config('relova.schema_cache_ttl', 300);
 
         return Cache::remember($cacheKey, $ttl, function () use ($connection, $table) {
-            $driver = $this->connect($connection);
+            $driver = $this->driverRegistry->resolve($connection->driver_type);
 
-            return $driver->getColumns($connection->toDriverConfig(), $table);
+            return $this->withTunnel($connection, fn (array $config) => $driver->getColumns($config, $table));
         });
     }
 
     public function query(RelovaConnection $connection, string $sql, array $bindings = []): array
     {
-        $driver = $this->connect($connection);
+        $driver = $this->driverRegistry->resolve($connection->driver_type);
 
-        return $driver->query($connection->toDriverConfig(), $sql, $bindings);
+        return $this->withTunnel($connection, fn (array $config) => $driver->query($config, $sql, $bindings));
     }
 
     public function flushCache(RelovaConnection $connection): void
@@ -113,10 +132,10 @@ class RelovaConnectionManager implements ConnectionManagerContract
         $startTime = microtime(true);
 
         try {
-            $this->securityService->validateHost($connection->host);
+            $this->validateConnectionHost($connection);
 
             $driver = $this->driverRegistry->resolve($connection->driver_type);
-            $driver->testConnection($connection->toDriverConfig());
+            $this->withTunnel($connection, fn (array $config) => $driver->testConnection($config));
 
             $latency = round((microtime(true) - $startTime) * 1000, 2);
 
@@ -164,9 +183,56 @@ class RelovaConnectionManager implements ConnectionManagerContract
         array $columns = [],
         int $limit = 100,
     ): array {
-        $driver = $this->connect($connection);
+        $driver = $this->driverRegistry->resolve($connection->driver_type);
         $sql = $driver->buildPreviewQuery($table, $columns, $limit);
 
-        return $driver->query($connection->toDriverConfig(), $sql);
+        return $this->withTunnel($connection, fn (array $config) => $driver->query($config, $sql));
+    }
+
+    /**
+     * Validate the reachable host for a connection.
+     *
+     * When SSH is enabled, the tunnel host is the entry point that must pass
+     * SSRF checks — the database host is the remote-side address accessible
+     * only through the tunnel and is unreachable directly.
+     */
+    private function validateConnectionHost(RelovaConnection $connection): void
+    {
+        if ($connection->ssh_enabled) {
+            $sshConfig = $connection->toSshConfig();
+            $this->securityService->validateHost($sshConfig['host']);
+        } else {
+            $this->securityService->validateHost($connection->host);
+        }
+    }
+
+    /**
+     * Execute a callable with the driver config, establishing an SSH tunnel
+     * first if the connection has SSH enabled.
+     *
+     * The callable receives the resolved config array (with host/port overridden
+     * to the local tunnel endpoint when SSH is active).
+     *
+     * @param  callable(array): mixed  $fn
+     * @return mixed
+     */
+    private function withTunnel(RelovaConnection $connection, callable $fn): mixed
+    {
+        if (! $connection->ssh_enabled) {
+            return $fn($connection->toDriverConfig());
+        }
+
+        $session = $this->sshTunnelService->establish($connection);
+
+        try {
+            $config = array_merge($connection->toDriverConfig(), [
+                'host' => '127.0.0.1',
+                'port' => $session['localPort'],
+            ]);
+
+            return $fn($config);
+        } finally {
+            $this->sshTunnelService->teardown($session);
+        }
     }
 }

@@ -29,6 +29,16 @@ return new class extends Migration
             $table->text('encrypted_password')->nullable();
             $table->json('config_meta')->nullable(); // Extra driver-specific config
 
+            // SSH Tunnel
+            $table->boolean('ssh_enabled')->default(false);
+            $table->string('ssh_host')->nullable();
+            $table->integer('ssh_port')->default(22);
+            $table->string('ssh_user')->nullable();
+            $table->string('ssh_auth_method', 20)->default('key');
+            $table->text('encrypted_ssh_password')->nullable();
+            $table->text('encrypted_ssh_private_key')->nullable();
+            $table->text('encrypted_ssh_passphrase')->nullable();
+
             // Cache & behavior
             $table->integer('cache_ttl')->default(300);
             $table->enum('query_mode', ['virtual', 'snapshot', 'on_demand'])->default('virtual');

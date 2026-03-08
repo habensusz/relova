@@ -57,7 +57,10 @@ class PostgreSqlDriver extends AbstractPdoDriver
             t.table_name,
             t.table_schema,
             t.table_type,
-            (SELECT reltuples::bigint FROM pg_class WHERE relname = t.table_name) AS row_count
+            (SELECT reltuples::bigint FROM pg_class c
+             JOIN pg_namespace n ON n.oid = c.relnamespace
+             WHERE c.relname = t.table_name AND n.nspname = t.table_schema
+             LIMIT 1) AS row_count
         FROM information_schema.tables t
         WHERE t.table_schema = '{$schema}'
         ORDER BY t.table_name";
@@ -82,6 +85,7 @@ class PostgreSqlDriver extends AbstractPdoDriver
             AND c.table_schema = kcu.table_schema
         LEFT JOIN information_schema.table_constraints tc
             ON kcu.constraint_name = tc.constraint_name
+            AND kcu.table_schema = tc.table_schema
             AND tc.constraint_type = 'PRIMARY KEY'
         WHERE c.table_schema = '{$schema}'
         AND c.table_name = '{$table}'
@@ -94,7 +98,7 @@ class PostgreSqlDriver extends AbstractPdoDriver
             'name' => $row['table_name'],
             'schema' => $row['table_schema'] ?? null,
             'type' => str_contains(strtoupper($row['table_type'] ?? ''), 'VIEW') ? 'view' : 'table',
-            'row_count' => isset($row['row_count']) ? (int) $row['row_count'] : null,
+            'row_count' => isset($row['row_count']) && (int) $row['row_count'] >= 0 ? (int) $row['row_count'] : null,
         ], $rawTables);
     }
 

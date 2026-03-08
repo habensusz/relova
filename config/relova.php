@@ -83,7 +83,15 @@ return [
     | Internal IP ranges and reserved address spaces that are blocklisted.
     | Tenants cannot point connectors at internal infrastructure.
     |
+    | Set RELOVA_SSRF_PROTECTION=false to disable entirely (local dev only).
+    | List specific hosts in `allowed_hosts` to whitelist them regardless
+    | of their resolved IP (useful for local DB containers etc.).
+    |
     */
+    'ssrf_protection' => env('RELOVA_SSRF_PROTECTION', true),
+
+    'ssrf_allowed_hosts' => array_filter(explode(',', env('RELOVA_SSRF_ALLOWED_HOSTS', ''))),
+
     'blocked_ip_ranges' => [
         '10.0.0.0/8',
         '172.16.0.0/12',

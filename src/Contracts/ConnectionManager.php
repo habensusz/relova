@@ -23,6 +23,13 @@ interface ConnectionManager
     public function test(RelovaConnection $connection): bool;
 
     /**
+     * Test connectivity for an unsaved (transient) connection — throws on failure.
+     *
+     * @throws \Exception
+     */
+    public function testUnsaved(RelovaConnection $connection): void;
+
+    /**
      * Get cached schema metadata or fetch fresh.
      *
      * @return array<int, array{name: string, schema: ?string, type: string, row_count: ?int}>

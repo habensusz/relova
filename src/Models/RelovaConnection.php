@@ -27,7 +27,9 @@ class RelovaConnection extends Model
     {
         return [
             'enabled' => 'boolean',
+            'ssh_enabled' => 'boolean',
             'port' => 'integer',
+            'ssh_port' => 'integer',
             'config_meta' => 'array',
             'cache_ttl' => 'integer',
             'last_health_check_at' => 'datetime',
@@ -37,6 +39,9 @@ class RelovaConnection extends Model
 
     protected $hidden = [
         'encrypted_password',
+        'encrypted_ssh_password',
+        'encrypted_ssh_private_key',
+        'encrypted_ssh_passphrase',
     ];
 
     /**
@@ -68,6 +73,50 @@ class RelovaConnection extends Model
     public function setPasswordAttribute(?string $value): void
     {
         $this->attributes['encrypted_password'] = $value
+            ? Crypt::encryptString($value)
+            : null;
+    }
+
+    // --- SSH credential encryption ---
+
+    public function getSshPasswordAttribute(): ?string
+    {
+        return $this->encrypted_ssh_password
+            ? Crypt::decryptString($this->encrypted_ssh_password)
+            : null;
+    }
+
+    public function setSshPasswordAttribute(?string $value): void
+    {
+        $this->attributes['encrypted_ssh_password'] = $value
+            ? Crypt::encryptString($value)
+            : null;
+    }
+
+    public function getSshPrivateKeyAttribute(): ?string
+    {
+        return $this->encrypted_ssh_private_key
+            ? Crypt::decryptString($this->encrypted_ssh_private_key)
+            : null;
+    }
+
+    public function setSshPrivateKeyAttribute(?string $value): void
+    {
+        $this->attributes['encrypted_ssh_private_key'] = $value
+            ? Crypt::encryptString($value)
+            : null;
+    }
+
+    public function getSshPassphraseAttribute(): ?string
+    {
+        return $this->encrypted_ssh_passphrase
+            ? Crypt::decryptString($this->encrypted_ssh_passphrase)
+            : null;
+    }
+
+    public function setSshPassphraseAttribute(?string $value): void
+    {
+        $this->attributes['encrypted_ssh_passphrase'] = $value
             ? Crypt::encryptString($value)
             : null;
     }
@@ -105,7 +154,25 @@ class RelovaConnection extends Model
             'schema' => $this->schema_name,
             'username' => $this->username,
             'password' => $this->password,
-        ]);
+        ], fn ($v) => ! is_null($v));
+    }
+
+    /**
+     * Get the SSH configuration array used by SshTunnelService::establish().
+     *
+     * @return array<string, mixed>
+     */
+    public function toSshConfig(): array
+    {
+        return [
+            'host' => $this->ssh_host ?: ($this->host ?? '127.0.0.1'),
+            'port' => $this->ssh_port ?? 22,
+            'user' => $this->ssh_user ?? 'forge',
+            'auth_method' => $this->ssh_auth_method ?? 'key',
+            'password' => $this->ssh_password,
+            'private_key' => $this->ssh_private_key,
+            'passphrase' => $this->ssh_passphrase,
+        ];
     }
 
     /**

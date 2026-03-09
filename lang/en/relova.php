@@ -146,7 +146,7 @@ return [
     'unmapped' => 'Unmapped',
     'no_snapshot_data' => 'No snapshot data available.',
     'back' => 'Back',
-    'snapshot_notice' => 'This is a read-only snapshot of a remote record. No data is imported into this system.',
+    'snapshot_notice' => 'Live data from a remote source. Mapped fields are synced to local records on refresh.',
 
     // SSH Tunnel
     'ssh_tunnel' => 'SSH Tunnel',

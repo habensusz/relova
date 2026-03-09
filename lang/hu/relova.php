@@ -165,7 +165,7 @@ return [
     'unmapped' => 'Nem leképezett',
     'no_snapshot_data' => 'Nem áll rendelkezésre pillanatfelvétel-adat.',
     'back' => 'Vissza',
-    'snapshot_notice' => 'Ez egy távoli rekord írásvédett pillanatfelvétele. Nem importál adatot ebbe a rendszerbe.',
+    'snapshot_notice' => 'Élő adatok egy távoli forrásból. A leképezett mezők frissítéskor szinkronizálódnak a helyi rekordokkal.',
 
     // Fájlalapú meghajtók (CSV / XLSX)
     'csv_file' => 'CSV fájl',

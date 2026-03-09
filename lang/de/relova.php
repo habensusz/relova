@@ -165,7 +165,7 @@ return [
     'unmapped' => 'Nicht gemappt',
     'no_snapshot_data' => 'Keine Snapshot-Daten verfügbar.',
     'back' => 'Zurück',
-    'snapshot_notice' => 'Dies ist eine schreibgeschützte Momentaufnahme eines Remote-Datensatzes. Es werden keine Daten importiert.',
+    'snapshot_notice' => 'Live-Daten aus einer Remote-Quelle. Zugeordnete Felder werden beim Aktualisieren mit lokalen Datensätzen synchronisiert.',
 
     // Dateibasierte Treiber (CSV / XLSX)
     'csv_file' => 'CSV-Datei',

@@ -177,10 +177,12 @@
                                             class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-100 focus:border-sky-500 focus:ring-1 focus:ring-sky-500/20 transition-all duration-200">
                                             <option value="">{{ __('relova.local_field') }}</option>
                                             @foreach($localColumns as $col)
+                                                @if(!($col['primary'] ?? false))
                                                 <option value="{{ $col['name'] }}"
                                                     title="{{ ($col['required'] ?? false) ? __('relova.required_field_hint') : '' }}">
                                                     {{ $col['name'] }}{{ ($col['required'] ?? false) ? ' *' : '' }} ({{ $col['type'] ?? '' }})
                                                 </option>
+                                                @endif
                                             @endforeach
                                         </select>
                                         @if(($col = collect($localColumns)->firstWhere('name', $mapping['local_field'] ?? '')) && ($col['required'] ?? false))

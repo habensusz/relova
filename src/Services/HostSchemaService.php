@@ -80,12 +80,13 @@ class HostSchemaService
     /**
      * Build the normalised column entry array.
      */
-    private function normaliseColumn(string $name, string $type, bool $nullable, ?string $default): array
+    private function normaliseColumn(string $name, string $type, bool $nullable, ?string $default, bool $primary = false): array
     {
         $hasDefault = $default !== null;
 
         $required = ! $nullable
             && ! $hasDefault
+            && ! $primary
             && ! in_array($name, self::AUTO_COLUMNS, true)
             && ! str_ends_with($name, '_at');   // any timestamp-ish column
 
@@ -94,6 +95,7 @@ class HostSchemaService
             'type' => $type,
             'nullable' => $nullable,
             'has_default' => $hasDefault,
+            'primary' => $primary,
             'required' => $required,
         ];
     }
@@ -117,15 +119,28 @@ class HostSchemaService
         return array_map(fn (object $r) => ['name' => $r->name], $rows);
     }
 
-    /** @return array<int, array{name: string, type: string, nullable: bool, has_default: bool, required: bool}> */
+    /** @return array<int, array{name: string, type: string, nullable: bool, has_default: bool, primary: bool, required: bool}> */
     private function pgsqlColumns(string $table): array
     {
         $rows = DB::select(
-            "SELECT column_name AS name, data_type AS type, is_nullable, column_default
-             FROM information_schema.columns
-             WHERE table_schema = current_schema()
-               AND table_name = ?
-             ORDER BY ordinal_position",
+            "SELECT
+                c.column_name AS name,
+                c.data_type AS type,
+                c.is_nullable,
+                c.column_default,
+                CASE WHEN kcu.column_name IS NOT NULL THEN true ELSE false END AS is_primary
+             FROM information_schema.columns c
+             LEFT JOIN information_schema.table_constraints tc
+                ON tc.table_schema = current_schema()
+               AND tc.table_name = c.table_name
+               AND tc.constraint_type = 'PRIMARY KEY'
+             LEFT JOIN information_schema.key_column_usage kcu
+                ON kcu.constraint_name = tc.constraint_name
+               AND kcu.table_schema = current_schema()
+               AND kcu.column_name = c.column_name
+             WHERE c.table_schema = current_schema()
+               AND c.table_name = ?
+             ORDER BY c.ordinal_position",
             [$table]
         );
 
@@ -134,7 +149,8 @@ class HostSchemaService
                 $r->name,
                 $r->type,
                 strtoupper($r->is_nullable) === 'YES',
-                $r->column_default
+                $r->column_default,
+                (bool) $r->is_primary,
             ),
             $rows
         );
@@ -158,15 +174,20 @@ class HostSchemaService
         return array_map(fn (object $r) => ['name' => $r->name], $rows);
     }
 
-    /** @return array<int, array{name: string, type: string, nullable: bool, has_default: bool, required: bool}> */
+    /** @return array<int, array{name: string, type: string, nullable: bool, has_default: bool, primary: bool, required: bool}> */
     private function mysqlColumns(string $table): array
     {
         $rows = DB::select(
-            "SELECT column_name AS name, data_type AS type, is_nullable, column_default
-             FROM information_schema.columns
-             WHERE table_schema = DATABASE()
-               AND table_name = ?
-             ORDER BY ordinal_position",
+            "SELECT
+                c.column_name AS name,
+                c.data_type AS type,
+                c.is_nullable,
+                c.column_default,
+                IF(c.column_key = 'PRI', true, false) AS is_primary
+             FROM information_schema.columns c
+             WHERE c.table_schema = DATABASE()
+               AND c.table_name = ?
+             ORDER BY c.ordinal_position",
             [$table]
         );
 
@@ -175,7 +196,8 @@ class HostSchemaService
                 $r->name,
                 $r->type,
                 strtoupper($r->is_nullable) === 'YES',
-                $r->column_default
+                $r->column_default,
+                (bool) $r->is_primary,
             ),
             $rows
         );
@@ -203,12 +225,25 @@ class HostSchemaService
         return array_map(fn (object $r) => ['name' => $r->name], $rows);
     }
 
-    /** @return array<int, array{name: string, type: string, nullable: bool, has_default: bool, required: bool}> */
+    /** @return array<int, array{name: string, type: string, nullable: bool, has_default: bool, primary: bool, required: bool}> */
     private function sqlsrvColumns(string $table): array
     {
         $rows = DB::select(
-            "SELECT c.column_name AS name, c.data_type AS type, c.is_nullable, c.column_default
+            "SELECT
+                c.column_name AS name,
+                c.data_type AS type,
+                c.is_nullable,
+                c.column_default,
+                CASE WHEN kcu.column_name IS NOT NULL THEN 1 ELSE 0 END AS is_primary
              FROM information_schema.columns c
+             LEFT JOIN information_schema.table_constraints tc
+                ON tc.table_catalog = DB_NAME()
+               AND tc.table_schema = SCHEMA_NAME()
+               AND tc.table_name = c.table_name
+               AND tc.constraint_type = 'PRIMARY KEY'
+             LEFT JOIN information_schema.key_column_usage kcu
+                ON kcu.constraint_name = tc.constraint_name
+               AND kcu.column_name = c.column_name
              WHERE c.table_catalog = DB_NAME()
                AND c.table_schema = SCHEMA_NAME()
                AND c.table_name = ?
@@ -221,7 +256,8 @@ class HostSchemaService
                 $r->name,
                 $r->type,
                 strtoupper($r->is_nullable) === 'YES',
-                $r->column_default
+                $r->column_default,
+                (bool) $r->is_primary,
             ),
             $rows
         );
@@ -241,11 +277,19 @@ class HostSchemaService
             ->all();
     }
 
-    /** @return array<int, array{name: string, type: string, nullable: bool, has_default: bool, required: bool}> */
+    /** @return array<int, array{name: string, type: string, nullable: bool, has_default: bool, primary: bool, required: bool}> */
     private function schemaFacadeColumns(string $table): array
     {
         if (! Schema::hasTable($table)) {
             return [];
+        }
+
+        // Detect primary key columns via Schema facade
+        $pkColumns = [];
+        try {
+            $pkColumns = Schema::getPrimaryKey($table)['columns'] ?? [];
+        } catch (\Throwable) {
+            // getPrimaryKey() may not be available in older framework versions; degrade gracefully
         }
 
         return collect(Schema::getColumns($table))
@@ -254,6 +298,7 @@ class HostSchemaService
                 $col['type_name'] ?? $col['type'] ?? 'unknown',
                 $col['nullable'] ?? true,
                 $col['default'] ?? null,
+                in_array($col['name'], $pkColumns, true),
             ))
             ->values()
             ->all();

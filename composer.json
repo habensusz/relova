@@ -16,6 +16,14 @@
         "illuminate/encryption": "^11.0|^12.0",
         "illuminate/cache": "^11.0|^12.0"
     },
+    "suggest": {
+        "ext-pdo_mysql": "Required for MySQL / MariaDB connections (MySqlDriver)",
+        "ext-pdo_pgsql": "Required for PostgreSQL connections (PostgreSqlDriver)",
+        "ext-pdo_sqlsrv": "Required for SQL Server connections (SqlServerDriver) — ships with Microsoft ODBC driver",
+        "ext-pdo_oci": "Required for Oracle connections (OracleDriver) — install Oracle Instant Client then pecl install oci8",
+        "ext-pdo_odbc": "Required for SAP HANA connections (SapHanaDriver) — install SAP HANA Client (HDBODBC) and enable pdo_odbc in php.ini",
+        "phpoffice/phpspreadsheet": "Required for Excel (XLSX) connections (XlsxDriver) — already present if you use maatwebsite/excel"
+    },
     "autoload": {
         "psr-4": {
             "Relova\\": "src/"

@@ -28,6 +28,28 @@ Relova is a Laravel package that lets your application **connect to and query ex
 | PHP | `^8.2` |
 | Laravel | `^11.0` or `^12.0` |
 
+### PHP Extensions — Core (required)
+
+| Extension | Purpose |
+|---|---|
+| `pdo` | Base PDO layer used by all relational drivers |
+| `pdo_mysql` | MySQL / MariaDB connections |
+| `pdo_pgsql` | PostgreSQL connections |
+| `pdo_sqlsrv` | SQL Server connections (ships with Microsoft ODBC driver) |
+| `openssl` | Credential encryption |
+
+### PHP Extensions — Optional (driver-specific)
+
+These are only required when you enable the corresponding driver in `config/relova.php`.
+
+| Extension | Driver | Installation |
+|---|---|---|
+| `pdo_oci` | Oracle | Bundled with Oracle Instant Client; see [Oracle OCI8 docs](https://www.php.net/manual/en/book.oci8.php). On Ubuntu/Debian: install Oracle Instant Client then `pecl install oci8`. |
+| `pdo_odbc` + HDBODBC | SAP HANA | Install the [SAP HANA Client](https://help.sap.com/docs/SAP_HANA_CLIENT) (includes `hdbodbc`), then enable `pdo_odbc` in `php.ini`. |
+| `phpoffice/phpspreadsheet` | Excel (XLSX) | `composer require phpoffice/phpspreadsheet` — already present if your host app uses `maatwebsite/excel`. |
+
+> **Missing extension?** Relova will surface a clear error message when you click *Test Connection* for a driver whose PHP extension is not loaded — no silent failures.
+
 ---
 
 ## Installation
@@ -202,9 +224,13 @@ relova/
     │   └── ConnectorDriver.php     # Interface: every driver must implement this
     ├── Drivers/
     │   ├── AbstractPdoDriver.php   # Shared PDO logic (query, columns, security)
-    │   ├── MySqlDriver.php
-    │   ├── PostgreSqlDriver.php
-    │   └── SqlServerDriver.php
+    │   ├── MySqlDriver.php         # pdo_mysql
+    │   ├── PostgreSqlDriver.php    # pdo_pgsql
+    │   ├── SqlServerDriver.php     # pdo_sqlsrv
+    │   ├── OracleDriver.php        # pdo_oci (optional — Oracle Instant Client required)
+    │   ├── SapHanaDriver.php       # pdo_odbc + HDBODBC (optional — SAP HANA Client required)
+    │   ├── CsvDriver.php           # No extra extension — reads local CSV files
+    │   └── XlsxDriver.php          # phpoffice/phpspreadsheet (optional)
     ├── Exceptions/
     │   ├── ConnectionException.php
     │   ├── QueryException.php

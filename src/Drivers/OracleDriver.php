@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Relova\Drivers;
 
 use PDO;
+use Relova\Exceptions\ConnectionException;
 
 /**
  * Oracle Database connector using PDO OCI (pdo_oci PHP extension required).

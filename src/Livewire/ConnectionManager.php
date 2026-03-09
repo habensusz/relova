@@ -67,18 +67,28 @@ class ConnectionManager extends Component
 
     public ?string $testMessage = null;
 
+    // File driver fields
+    public string $delimiter = ',';
+
+    protected function isFileDriver(): bool
+    {
+        return in_array($this->driver_type, ['csv', 'xlsx'], true);
+    }
+
     protected function rules(): array
     {
+        $fileDriver = $this->isFileDriver();
+
         return [
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
             'driver_type' => 'required|string',
-            'host' => 'required|string|max:255',
-            'port' => 'nullable|integer|min:1|max:65535',
-            'database_name' => 'required|string|max:255',
+            'host' => 'required|string|max:1024',
+            'port' => $fileDriver ? 'nullable|integer' : 'nullable|integer|min:1|max:65535',
+            'database_name' => $fileDriver ? 'nullable|string|max:255' : 'required|string|max:255',
             'schema_name' => 'nullable|string|max:255',
-            'username' => 'required|string|max:255',
-            'password' => $this->editing ? 'nullable|string|max:255' : 'required|string|max:255',
+            'username' => $fileDriver ? 'nullable|string|max:255' : 'required|string|max:255',
+            'password' => $fileDriver ? 'nullable|string' : ($this->editing ? 'nullable|string|max:255' : 'required|string|max:255'),
             'cache_ttl' => 'integer|min:0|max:86400',
             'enabled' => 'boolean',
             'ssh_enabled' => 'boolean',
@@ -89,6 +99,7 @@ class ConnectionManager extends Component
             'ssh_password' => 'nullable|string',
             'ssh_private_key' => 'nullable|string',
             'ssh_passphrase' => 'nullable|string',
+            'delimiter' => 'nullable|string|max:3',
         ];
     }
 
@@ -130,6 +141,7 @@ class ConnectionManager extends Component
         $this->password = '';
         $this->cache_ttl = $connection->cache_ttl ?? 300;
         $this->enabled = $connection->enabled;
+        $this->delimiter = (string) ($connection->config_meta['delimiter'] ?? ',');
 
         // SSH tunnel
         $this->ssh_enabled = (bool) $connection->ssh_enabled;
@@ -151,18 +163,21 @@ class ConnectionManager extends Component
             'description' => $this->description ?: null,
             'driver_type' => $this->driver_type,
             'host' => $this->host,
-            'port' => $this->port,
-            'database_name' => $this->database_name,
-            'schema_name' => $this->schema_name ?: null,
-            'username' => $this->username,
+            'port' => $this->isFileDriver() ? null : $this->port,
+            'database_name' => $this->isFileDriver() ? null : ($this->database_name ?: null),
+            'schema_name' => $this->isFileDriver() ? null : ($this->schema_name ?: null),
+            'username' => $this->isFileDriver() ? null : ($this->username ?: null),
             'cache_ttl' => $this->cache_ttl,
             'query_mode' => 'snapshot',
             'enabled' => $this->enabled,
-            'ssh_enabled' => $this->ssh_enabled,
+            'ssh_enabled' => $this->isFileDriver() ? false : $this->ssh_enabled,
             'ssh_host' => $this->ssh_host ?: null,
             'ssh_port' => $this->ssh_port ?? 22,
             'ssh_user' => $this->ssh_user ?: null,
             'ssh_auth_method' => $this->ssh_auth_method ?: 'key',
+            'config_meta' => $this->driver_type === 'csv'
+                ? ['delimiter' => $this->delimiter ?: ',']
+                : null,
         ];
 
         if ($this->editing && $this->editingUid) {

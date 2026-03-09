@@ -165,12 +165,37 @@
                                 <option value="sqlsrv">SQL Server</option>
                                 <option value="oracle">Oracle</option>
                                 <option value="sap_hana">SAP HANA</option>
+                                <option value="csv">{{ __('relova.csv_file') }}</option>
+                                <option value="xlsx">{{ __('relova.xlsx_file') }}</option>
                             </select>
                             @error('driver_type') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                         </div>
 
-                        {{-- Host / Port / DB --}}
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {{-- File path (CSV / XLSX only) --}}
+                        <div x-show="['csv', 'xlsx'].includes($wire.driver_type)" x-cloak>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova.file_path') }}</label>
+                            <input wire:model="host" type="text"
+                                class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:focus:border-emerald-400 transition-all duration-200 font-mono"
+                                placeholder="/var/www/storage/imports/data.csv">
+                            @error('host') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                            <p class="mt-1 text-xs text-gray-400">{{ __('relova.file_path_hint') }}</p>
+                        </div>
+
+                        {{-- CSV delimiter (CSV only) --}}
+                        <div x-show="$wire.driver_type === 'csv'" x-cloak>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova.delimiter') }}</label>
+                            <select wire:model="delimiter"
+                                class="w-full max-w-xs px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:focus:border-emerald-400 transition-all duration-200">
+                                <option value=",">, {{ __('relova.delimiter_comma') }}</option>
+                                <option value=";">; {{ __('relova.delimiter_semicolon') }}</option>
+                                <option value="&#9;">{{ __('relova.delimiter_tab') }}</option>
+                                <option value="|">| {{ __('relova.delimiter_pipe') }}</option>
+                            </select>
+                        </div>
+
+                        {{-- Host / Port / DB (database drivers only) --}}
+                        <div x-show="!['csv', 'xlsx'].includes($wire.driver_type)" x-cloak>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova.host') }}</label>
                                 <input wire:model="host" type="text"
@@ -191,10 +216,12 @@
                                     placeholder="my_database">
                                 @error('database_name') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                             </div>
-                        </div>
+                            </div>
+                        </div>{{-- /db host/port/db --}}
 
-                        {{-- Schema / Username / Password --}}
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {{-- Schema / Username / Password (database drivers only) --}}
+                        <div x-show="!['csv', 'xlsx'].includes($wire.driver_type)" x-cloak>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova.schema') }}</label>
                                 <input wire:model="schema_name" type="text"
@@ -215,7 +242,8 @@
                                     placeholder="{{ $editing ? __('relova.password_unchanged') : __('relova.password') }}">
                                 @error('password') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                             </div>
-                        </div>
+                            </div>
+                        </div>{{-- /db schema/user/pass --}}
 
                         {{-- Advanced settings --}}
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -235,7 +263,8 @@
                             </div>
                         </div>
 
-                        {{-- SSH Tunnel --}}
+                        {{-- SSH Tunnel (database drivers only) --}}
+                        <div x-show="!['csv', 'xlsx'].includes($wire.driver_type)" x-cloak>
                         <div x-data="{ open: @entangle('ssh_enabled') }"
                             class="rounded-xl border border-gray-200 dark:border-gray-600 overflow-hidden">
                             {{-- SSH toggle header --}}
@@ -332,7 +361,8 @@
                                     </div>
                                 @endif
                             </div>
-                        </div>
+                        </div>{{-- /ssh x-data --}}
+                        </div>{{-- /db-only SSH wrapper --}}
 
                         {{-- Test result --}}
                         @if($testResult)

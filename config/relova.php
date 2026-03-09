@@ -119,9 +119,8 @@ return [
         'sqlsrv'   => \Relova\Drivers\SqlServerDriver::class,
         'oracle'   => \Relova\Drivers\OracleDriver::class,
         'sap_hana' => \Relova\Drivers\SapHanaDriver::class,
-        // Phase 3:
-        // 'csv' => \Relova\Drivers\CsvDriver::class,
-        // 'excel' => \Relova\Drivers\ExcelDriver::class,
+        'csv'      => \Relova\Drivers\CsvDriver::class,
+        'xlsx'     => \Relova\Drivers\XlsxDriver::class,
         // Phase 4:
         // 'rest_api' => \Relova\Drivers\RestApiDriver::class,
         // 'odata' => \Relova\Drivers\ODataDriver::class,

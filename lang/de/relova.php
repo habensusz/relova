@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 return [
     // Allgemein
@@ -166,4 +166,15 @@ return [
     'no_snapshot_data' => 'Keine Snapshot-Daten verfügbar.',
     'back' => 'Zurück',
     'snapshot_notice' => 'Dies ist eine schreibgeschützte Momentaufnahme eines Remote-Datensatzes. Es werden keine Daten importiert.',
+
+    // Dateibasierte Treiber (CSV / XLSX)
+    'csv_file' => 'CSV-Datei',
+    'xlsx_file' => 'Excel (XLSX)',
+    'file_path' => 'Dateipfad',
+    'file_path_hint' => 'Absoluter Pfad zur Datei auf dem Server (z.B. /var/www/storage/imports/data.csv).',
+    'delimiter' => 'Trennzeichen',
+    'delimiter_comma' => 'Komma (Standard)',
+    'delimiter_semicolon' => 'Semikolon',
+    'delimiter_tab' => 'Tabulator',
+    'delimiter_pipe' => 'Pipe',
 ];

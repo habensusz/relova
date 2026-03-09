@@ -168,4 +168,15 @@ return [
     'ssh_passphrase_optional' => 'Optional — leave blank if key has no passphrase',
     'ssh_password_label' => 'SSH Password',
     'ssh_password_warning' => 'Password auth requires `sshpass` on the server. Key auth is recommended.',
+
+    // File-based drivers (CSV / XLSX)
+    'csv_file' => 'CSV File',
+    'xlsx_file' => 'Excel (XLSX)',
+    'file_path' => 'File Path',
+    'file_path_hint' => 'Absolute path to the file on the server (e.g. /var/www/storage/imports/data.csv).',
+    'delimiter' => 'Delimiter',
+    'delimiter_comma' => 'Comma (default)',
+    'delimiter_semicolon' => 'Semicolon',
+    'delimiter_tab' => 'Tab',
+    'delimiter_pipe' => 'Pipe',
 ];

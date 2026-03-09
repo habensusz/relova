@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 return [
     // Általános
@@ -166,4 +166,15 @@ return [
     'no_snapshot_data' => 'Nem áll rendelkezésre pillanatfelvétel-adat.',
     'back' => 'Vissza',
     'snapshot_notice' => 'Ez egy távoli rekord írásvédett pillanatfelvétele. Nem importál adatot ebbe a rendszerbe.',
+
+    // Fájlalapú meghajtók (CSV / XLSX)
+    'csv_file' => 'CSV fájl',
+    'xlsx_file' => 'Excel (XLSX)',
+    'file_path' => 'Fájl elérési út',
+    'file_path_hint' => 'A fájl abszolút elérési útja a szerveren (pl. /var/www/storage/imports/data.csv).',
+    'delimiter' => 'Elválasztó',
+    'delimiter_comma' => 'Vessző (alapértelmezett)',
+    'delimiter_semicolon' => 'Pontosvessző',
+    'delimiter_tab' => 'Tab',
+    'delimiter_pipe' => 'Cső karakter',
 ];

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 return [
     // Allgemein
@@ -177,4 +177,10 @@ return [
     'delimiter_semicolon' => 'Semikolon',
     'delimiter_tab' => 'Tabulator',
     'delimiter_pipe' => 'Pipe',
+
+    'browse' => 'Durchsuchen',
+    'browse_files' => 'Dateien durchsuchen',
+    'browser_invalid_dir' => 'Ungültiges oder nicht zugängliches Verzeichnis.',
+    'browser_permission_denied' => 'Zugriff verweigert.',
+    'browser_empty' => 'Keine passenden Dateien in diesem Verzeichnis gefunden.',
 ];

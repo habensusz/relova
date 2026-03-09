@@ -179,4 +179,10 @@ return [
     'delimiter_semicolon' => 'Semicolon',
     'delimiter_tab' => 'Tab',
     'delimiter_pipe' => 'Pipe',
+
+    'browse' => 'Browse',
+    'browse_files' => 'Browse Files',
+    'browser_invalid_dir' => 'Invalid or inaccessible directory.',
+    'browser_permission_denied' => 'Permission denied.',
+    'browser_empty' => 'No matching files found in this directory.',
 ];

@@ -70,6 +70,15 @@ class ConnectionManager extends Component
     // File driver fields
     public string $delimiter = ',';
 
+    // File browser
+    public bool $showFileBrowser = false;
+
+    public string $fileBrowserPath = '';
+
+    public array $fileBrowserEntries = [];
+
+    public ?string $fileBrowserError = null;
+
     protected function isFileDriver(): bool
     {
         return in_array($this->driver_type, ['csv', 'xlsx'], true);
@@ -354,8 +363,80 @@ class ConnectionManager extends Component
         $this->ssh_passphrase = '';
         $this->testResult = null;
         $this->testMessage = null;
+        $this->showFileBrowser = false;
+        $this->fileBrowserPath = '';
+        $this->fileBrowserEntries = [];
+        $this->fileBrowserError = null;
+        $this->delimiter = ',';
     }
 
+    public function openFileBrowser(): void
+    {
+        $start = $this->host && is_dir(dirname($this->host))
+            ? dirname($this->host)
+            : (is_dir($this->host) ? $this->host : DIRECTORY_SEPARATOR);
+
+        $this->fileBrowserNavigate($start);
+        $this->showFileBrowser = true;
+    }
+
+    public function fileBrowserNavigate(string $path): void
+    {
+        $this->fileBrowserError = null;
+        $real = realpath($path);
+
+        if ($real === false || ! is_dir($real)) {
+            $this->fileBrowserError = __('relova.browser_invalid_dir');
+
+            return;
+        }
+
+        $this->fileBrowserPath = $real;
+        $entries = [];
+
+        $parent = dirname($real);
+        if ($parent !== $real) {
+            $entries[] = ['name' => '..', 'path' => $parent, 'type' => 'dir'];
+        }
+
+        $items = @scandir($real);
+        if ($items === false) {
+            $this->fileBrowserError = __('relova.browser_permission_denied');
+            $this->fileBrowserEntries = $entries;
+
+            return;
+        }
+
+        $extensions = $this->driver_type === 'csv' ? ['csv'] : ['xlsx', 'xls'];
+
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+            $full = $real . DIRECTORY_SEPARATOR . $item;
+            if (is_dir($full)) {
+                $entries[] = ['name' => $item, 'path' => $full, 'type' => 'dir'];
+            } elseif (is_file($full)) {
+                $ext = strtolower(pathinfo($item, PATHINFO_EXTENSION));
+                if (in_array($ext, $extensions, true)) {
+                    $entries[] = ['name' => $item, 'path' => $full, 'type' => 'file'];
+                }
+            }
+        }
+
+        usort($entries, fn ($a, $b) => $a['type'] === $b['type']
+            ? strnatcasecmp($a['name'], $b['name'])
+            : ($a['type'] === 'dir' ? -1 : 1)
+        );
+
+        $this->fileBrowserEntries = $entries;
+    }
+
+    public function fileBrowserSelect(string $path): void
+    {
+        $this->host = $path;
+        $this->showFileBrowser = false;
+    }
 
     public function render(): \Illuminate\View\View
     {

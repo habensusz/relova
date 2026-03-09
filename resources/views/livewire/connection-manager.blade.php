@@ -174,9 +174,18 @@
                         {{-- File path (CSV / XLSX only) --}}
                         <div x-show="['csv', 'xlsx'].includes($wire.driver_type)" x-cloak>
                             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova.file_path') }}</label>
-                            <input wire:model="host" type="text"
-                                class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:focus:border-emerald-400 transition-all duration-200 font-mono"
-                                placeholder="/var/www/storage/imports/data.csv">
+                            <div class="flex gap-2">
+                                <input wire:model="host" type="text"
+                                    class="flex-1 px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:focus:border-emerald-400 transition-all duration-200 font-mono"
+                                    placeholder="/var/www/storage/imports/data.csv">
+                                <button wire:click="openFileBrowser" type="button"
+                                    class="flex-shrink-0 inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition-all duration-200">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v8.25" />
+                                    </svg>
+                                    {{ __('relova.browse') }}
+                                </button>
+                            </div>
                             @error('host') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                             <p class="mt-1 text-xs text-gray-400">{{ __('relova.file_path_hint') }}</p>
                         </div>
@@ -398,4 +407,70 @@
         </div>
     @endif
 </div>
+
+{{-- File Browser Modal --}}
+@if($showFileBrowser)
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 dark:bg-gray-900/80 backdrop-blur-sm">
+        <div class="w-full max-w-lg bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 flex flex-col" style="max-height: 80vh;">
+            {{-- Header --}}
+            <div class="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
+                <div class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v8.25" />
+                    </svg>
+                    <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ __('relova.browse_files') }}</span>
+                </div>
+                <button wire:click="$set('showFileBrowser', false)" type="button" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            {{-- Current path --}}
+            <div class="px-4 py-2 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
+                <p class="text-xs font-mono text-gray-500 dark:text-gray-400 truncate" title="{{ $fileBrowserPath }}">{{ $fileBrowserPath ?: '/' }}</p>
+            </div>
+
+            {{-- Error --}}
+            @if($fileBrowserError)
+                <div class="px-4 py-2 bg-red-50 dark:bg-red-900/20 text-xs text-red-600 dark:text-red-400 flex-shrink-0">{{ $fileBrowserError }}</div>
+            @endif
+
+            {{-- Entries --}}
+            <div class="overflow-y-auto flex-1">
+                @if(empty($fileBrowserEntries) && !$fileBrowserError)
+                    <p class="text-center py-8 text-sm text-gray-400">{{ __('relova.browser_empty') }}</p>
+                @endif
+                @foreach($fileBrowserEntries as $entry)
+                    @if($entry['type'] === 'dir')
+                        <button wire:click="fileBrowserNavigate('{{ addslashes($entry['path']) }}')" type="button"
+                            class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150 text-left">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 text-amber-500 flex-shrink-0">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v8.25" />
+                            </svg>
+                            <span class="truncate font-mono">{{ $entry['name'] }}</span>
+                        </button>
+                    @else
+                        <button wire:click="fileBrowserSelect('{{ addslashes($entry['path']) }}')" type="button"
+                            class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors duration-150 text-left">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 text-emerald-500 flex-shrink-0">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                            </svg>
+                            <span class="truncate font-mono">{{ $entry['name'] }}</span>
+                        </button>
+                    @endif
+                @endforeach
+            </div>
+
+            {{-- Footer --}}
+            <div class="p-4 border-t border-gray-100 dark:border-gray-700 flex-shrink-0 flex justify-end">
+                <button wire:click="$set('showFileBrowser', false)" type="button"
+                    class="px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition-all duration-200">
+                    {{ __('ui.cancel') }}
+                </button>
+            </div>
+        </div>
+    </div>
+@endif
 </div>

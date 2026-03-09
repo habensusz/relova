@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 return [
     // Általános
@@ -177,4 +177,10 @@ return [
     'delimiter_semicolon' => 'Pontosvessző',
     'delimiter_tab' => 'Tab',
     'delimiter_pipe' => 'Cső karakter',
+
+    'browse' => 'Tallózás',
+    'browse_files' => 'Fájlok tallózása',
+    'browser_invalid_dir' => 'Érvénytelen vagy nem elérhető könyvtár.',
+    'browser_permission_denied' => 'Hozzáférés megtagadva.',
+    'browser_empty' => 'Nem találhatók megfelelő fájlok ebben a könyvtárban.',
 ];

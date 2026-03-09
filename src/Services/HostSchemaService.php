@@ -78,10 +78,27 @@ class HostSchemaService
     ];
 
     /**
-     * Build the normalised column entry array.
+     * Whether a column name is a Relova-managed infrastructure column
+     * (relova_ref_uid, relova_synced_at, …) that must be hidden from mapping.
      */
-    private function normaliseColumn(string $name, string $type, bool $nullable, ?string $default, bool $primary = false): array
+    private function isRelovaColumn(string $name): bool
     {
+        return str_starts_with($name, 'relova_');
+    }
+
+    /**
+     * Build the normalised column entry array.
+     * Returns null for columns that should never appear in the mapping UI.
+     *
+     * @return array{name: string, type: string, nullable: bool, has_default: bool, primary: bool, foreign_key: bool, required: bool}|null
+     */
+    private function normaliseColumn(string $name, string $type, bool $nullable, ?string $default, bool $primary = false): ?array
+    {
+        // Relova infrastructure columns must never be offered as mapping targets.
+        if ($this->isRelovaColumn($name)) {
+            return null;
+        }
+
         $hasDefault = $default !== null;
 
         // Columns ending in _id (and not the PK itself) are foreign keys and
@@ -126,7 +143,7 @@ class HostSchemaService
         return array_map(fn (object $r) => ['name' => $r->name], $rows);
     }
 
-    /** @return array<int, array{name: string, type: string, nullable: bool, has_default: bool, primary: bool, required: bool}> */
+    /** @return array<int, array{name: string, type: string, nullable: bool, has_default: bool, primary: bool, foreign_key: bool, required: bool}> */
     private function pgsqlColumns(string $table): array
     {
         $rows = DB::select(
@@ -151,7 +168,7 @@ class HostSchemaService
             [$table]
         );
 
-        return array_map(
+        return array_values(array_filter(array_map(
             fn (object $r) => $this->normaliseColumn(
                 $r->name,
                 $r->type,
@@ -160,7 +177,7 @@ class HostSchemaService
                 (bool) $r->is_primary,
             ),
             $rows
-        );
+        )));
     }
 
     // ─── MySQL / MariaDB ──────────────────────────────────────────────────────
@@ -181,7 +198,7 @@ class HostSchemaService
         return array_map(fn (object $r) => ['name' => $r->name], $rows);
     }
 
-    /** @return array<int, array{name: string, type: string, nullable: bool, has_default: bool, primary: bool, required: bool}> */
+    /** @return array<int, array{name: string, type: string, nullable: bool, has_default: bool, primary: bool, foreign_key: bool, required: bool}> */
     private function mysqlColumns(string $table): array
     {
         $rows = DB::select(
@@ -198,7 +215,7 @@ class HostSchemaService
             [$table]
         );
 
-        return array_map(
+        return array_values(array_filter(array_map(
             fn (object $r) => $this->normaliseColumn(
                 $r->name,
                 $r->type,
@@ -207,7 +224,7 @@ class HostSchemaService
                 (bool) $r->is_primary,
             ),
             $rows
-        );
+        )));
     }
 
     // ─── SQL Server ───────────────────────────────────────────────────────────
@@ -232,7 +249,7 @@ class HostSchemaService
         return array_map(fn (object $r) => ['name' => $r->name], $rows);
     }
 
-    /** @return array<int, array{name: string, type: string, nullable: bool, has_default: bool, primary: bool, required: bool}> */
+    /** @return array<int, array{name: string, type: string, nullable: bool, has_default: bool, primary: bool, foreign_key: bool, required: bool}> */
     private function sqlsrvColumns(string $table): array
     {
         $rows = DB::select(
@@ -258,7 +275,7 @@ class HostSchemaService
             [$table]
         );
 
-        return array_map(
+        return array_values(array_filter(array_map(
             fn (object $r) => $this->normaliseColumn(
                 $r->name,
                 $r->type,
@@ -267,7 +284,7 @@ class HostSchemaService
                 (bool) $r->is_primary,
             ),
             $rows
-        );
+        )));
     }
 
     // ─── SQLite / fallback ────────────────────────────────────────────────────
@@ -307,6 +324,7 @@ class HostSchemaService
                 $col['default'] ?? null,
                 in_array($col['name'], $pkColumns, true),
             ))
+            ->filter()
             ->values()
             ->all();
     }

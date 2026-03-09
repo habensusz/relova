@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace Relova;
 
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\ServiceProvider;
+use Relova\Console\Commands\AddColumnsCommand;
 use Relova\Contracts\ConnectionManager;
 use Relova\Http\Middleware\RelovaEnrichmentMiddleware;
 use Relova\Services\DriverRegistry;
@@ -73,6 +74,13 @@ class RelovaServiceProvider extends ServiceProvider
         // Register the enrichment middleware alias so host apps can use
         // Route::middleware(['relova.enrich']) or add it to a group by alias.
         $this->app['router']->aliasMiddleware('relova.enrich', RelovaEnrichmentMiddleware::class);
+
+        // Register Artisan commands
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                AddColumnsCommand::class,
+            ]);
+        }
 
         // Publish config
         $this->publishes([

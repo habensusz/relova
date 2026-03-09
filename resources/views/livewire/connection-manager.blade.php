@@ -271,20 +271,13 @@
                         </div>{{-- /db schema/user/pass --}}
 
                         {{-- Advanced settings --}}
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
                             <div>
                                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova.cache_ttl') }}</label>
                                 <input wire:model="cache_ttl" type="number"
                                     class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:focus:border-emerald-400 transition-all duration-200"
                                     placeholder="300" min="0" max="86400">
                                 <p class="mt-1 text-xs text-gray-400">{{ __('relova.cache_ttl_hint') }}</p>
-                            </div>
-                            <div class="flex items-end pb-1">
-                                <label class="flex items-center gap-3 cursor-pointer">
-                                    <input wire:model="enabled" type="checkbox"
-                                        class="w-5 h-5 rounded-lg border-gray-300 dark:border-gray-600 text-emerald-600 focus:ring-emerald-500/20 transition-all duration-200">
-                                    <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ __('relova.enabled') }}</span>
-                                </label>
                             </div>
                         </div>
 

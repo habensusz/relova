@@ -6,7 +6,6 @@ namespace Relova\Livewire;
 
 use Livewire\Component;
 use Relova\Models\RelovaConnection;
-use Relova\Services\DriverRegistry;
 use Relova\Services\RelovaConnectionManager;
 
 /**
@@ -43,8 +42,6 @@ class ConnectionManager extends Component
     public string $password = '';
 
     public int $cache_ttl = 300;
-
-    public string $query_mode = 'virtual';
 
     public bool $enabled = false;
 
@@ -83,7 +80,6 @@ class ConnectionManager extends Component
             'username' => 'required|string|max:255',
             'password' => $this->editing ? 'nullable|string|max:255' : 'required|string|max:255',
             'cache_ttl' => 'integer|min:0|max:86400',
-            'query_mode' => 'required|in:virtual,snapshot,on_demand',
             'enabled' => 'boolean',
             'ssh_enabled' => 'boolean',
             'ssh_host' => 'nullable|string|max:255',
@@ -133,7 +129,6 @@ class ConnectionManager extends Component
         $this->username = $connection->username ?? '';
         $this->password = '';
         $this->cache_ttl = $connection->cache_ttl ?? 300;
-        $this->query_mode = $connection->query_mode ?? 'virtual';
         $this->enabled = $connection->enabled;
 
         // SSH tunnel
@@ -161,7 +156,7 @@ class ConnectionManager extends Component
             'schema_name' => $this->schema_name ?: null,
             'username' => $this->username,
             'cache_ttl' => $this->cache_ttl,
-            'query_mode' => $this->query_mode,
+            'query_mode' => 'snapshot',
             'enabled' => $this->enabled,
             'ssh_enabled' => $this->ssh_enabled,
             'ssh_host' => $this->ssh_host ?: null,
@@ -214,7 +209,7 @@ class ConnectionManager extends Component
 
         $this->showForm = false;
         $this->loadConnections();
-        $this->dispatch('notify', message: __('relova::relova.connection_saved'));
+        $this->dispatch('notify', message: __('relova.connection_saved'));
     }
 
     public function testConnectionFromForm(): void
@@ -277,7 +272,7 @@ class ConnectionManager extends Component
             $manager->testUnsaved($connection);
 
             $this->testResult = 'success';
-            $this->testMessage = __('relova::relova.test_success');
+            $this->testMessage = __('relova.test_success');
         } catch (\Exception $e) {
             $this->testResult = 'error';
             $this->testMessage = $e->getMessage();
@@ -294,8 +289,8 @@ class ConnectionManager extends Component
         $this->loadConnections();
 
         $this->dispatch('notify', message: $result
-            ? __('relova::relova.test_success')
-            : __('relova::relova.test_failed')
+            ? __('relova.test_success')
+            : __('relova.test_failed')
         );
     }
 
@@ -303,7 +298,7 @@ class ConnectionManager extends Component
     {
         RelovaConnection::where('uid', $uid)->delete();
         $this->loadConnections();
-        $this->dispatch('notify', message: __('relova::relova.connection_deleted'));
+        $this->dispatch('notify', message: __('relova.connection_deleted'));
     }
 
     public function toggleConnection(string $uid): void
@@ -333,7 +328,6 @@ class ConnectionManager extends Component
         $this->username = '';
         $this->password = '';
         $this->cache_ttl = 300;
-        $this->query_mode = 'virtual';
         $this->enabled = false;
         $this->ssh_enabled = false;
         $this->ssh_host = '';
@@ -347,29 +341,9 @@ class ConnectionManager extends Component
         $this->testMessage = null;
     }
 
-    public function updatedDriverType(): void
-    {
-        $registry = app(DriverRegistry::class);
-
-        try {
-            $driver = $registry->resolve($this->driver_type);
-            $this->port = $driver->getDefaultPort();
-        } catch (\Exception) {
-            // Keep current port
-        }
-    }
-
-    public function getDriverOptions(): array
-    {
-        $registry = app(DriverRegistry::class);
-
-        return $registry->getDriverInfo();
-    }
 
     public function render(): \Illuminate\View\View
     {
-        return view('relova::livewire.connection-manager', [
-            'driverOptions' => $this->getDriverOptions(),
-        ]);
+        return view('relova::livewire.connection-manager');
     }
 }

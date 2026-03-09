@@ -44,7 +44,7 @@
                     class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:focus:border-sky-400 transition-all duration-200">
                     <option value="">{{ __('relova.choose_connection') }}</option>
                     @foreach($connections as $conn)
-                        <option value="{{ $conn['uid'] }}">{{ $conn['name'] }} ({{ $conn['driver_type'] }})</option>
+                        <option value="{{ $conn['uid'] }}">{{ $conn['name'] }}</option>
                     @endforeach
                 </select>
             </div>
@@ -61,7 +61,7 @@
         </div>
 
         {{-- Name & target module --}}
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova.mapping_name') }}</label>
                 <input wire:model="name" type="text"
@@ -88,15 +88,6 @@
                     @endforeach
                 </select>
                 @error('target_module') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-            </div>
-            <div>
-                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova.query_mode') }}</label>
-                <select wire:model="query_mode"
-                    class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:focus:border-sky-400 transition-all duration-200">
-                    <option value="virtual">{{ __('relova.mode_virtual') }}</option>
-                    <option value="snapshot">{{ __('relova.mode_snapshot') }}</option>
-                    <option value="on_demand">{{ __('relova.mode_on_demand') }}</option>
-                </select>
             </div>
         </div>
 

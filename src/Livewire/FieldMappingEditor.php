@@ -39,8 +39,6 @@ class FieldMappingEditor extends Component
 
     public string $source_table = '';
 
-    public string $query_mode = 'virtual';
-
     public bool $enabled = true;
 
     /** @var array<int, array{remote_column: string, local_field: string}> */
@@ -62,7 +60,6 @@ class FieldMappingEditor extends Component
             'description' => 'nullable|string|max:1000',
             'target_module' => 'required|string',
             'source_table' => 'required|string|max:255',
-            'query_mode' => 'required|in:virtual,snapshot,on_demand',
             'enabled' => 'boolean',
             'column_mappings' => 'required|array|min:1',
             'column_mappings.*.remote_column' => 'required|string',
@@ -186,7 +183,6 @@ class FieldMappingEditor extends Component
         $this->description = $mapping->description ?? '';
         $this->target_module = $mapping->target_module;
         $this->source_table = $mapping->source_table;
-        $this->query_mode = $mapping->query_mode ?? 'virtual';
         $this->enabled = $mapping->enabled;
         $this->column_mappings = $mapping->column_mappings ?? [];
         $this->connectionUid = $mapping->connection?->uid;
@@ -230,7 +226,7 @@ class FieldMappingEditor extends Component
             'target_module' => $this->target_module,
             'source_table' => $this->source_table,
             'column_mappings' => $this->column_mappings,
-            'query_mode' => $this->query_mode,
+            'query_mode' => 'snapshot',
             'enabled' => $this->enabled,
         ];
 

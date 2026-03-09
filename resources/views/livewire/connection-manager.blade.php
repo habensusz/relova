@@ -6,7 +6,7 @@
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
             <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
         </svg>
-        {{ __('relova::relova.relova_connector') }}
+        {{ __('relova.relova_connector') }}
     </a>
 </div>
 <div class="relative bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-lg overflow-hidden">
@@ -22,8 +22,8 @@
                 </svg>
             </div>
             <div>
-                <h3 class="text-base font-semibold text-gray-900 dark:text-white uppercase tracking-wide">{{ __('relova::relova.connections') }}</h3>
-                <p class="text-xs text-gray-500 dark:text-gray-400">{{ count($connections) }} {{ __('relova::relova.registered') }}</p>
+                <h3 class="text-base font-semibold text-gray-900 dark:text-white uppercase tracking-wide">{{ __('relova.connections') }}</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400">{{ count($connections) }} {{ __('relova.registered') }}</p>
             </div>
         </div>
         <button wire:click="openCreateForm" type="button"
@@ -31,7 +31,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
             </svg>
-            {{ __('relova::relova.new_connection') }}
+            {{ __('relova.new_connection') }}
         </button>
     </div>
 
@@ -44,8 +44,8 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
                     </svg>
                 </div>
-                <p class="text-gray-500 dark:text-gray-400 mb-2">{{ __('relova::relova.no_connections') }}</p>
-                <p class="text-sm text-gray-400 dark:text-gray-500">{{ __('relova::relova.no_connections_hint') }}</p>
+                <p class="text-gray-500 dark:text-gray-400 mb-2">{{ __('relova.no_connections') }}</p>
+                <p class="text-sm text-gray-400 dark:text-gray-500">{{ __('relova.no_connections_hint') }}</p>
             </div>
         @else
             <div class="grid gap-3">
@@ -67,7 +67,6 @@
                                 <div>
                                     <div class="font-semibold text-gray-900 dark:text-white text-sm">{{ $conn['name'] }}</div>
                                     <div class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2 mt-0.5">
-                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-600 text-xs font-mono">{{ $conn['driver_type'] }}</span>
                                         <span>{{ $conn['host'] ?? '' }}{{ $conn['port'] ? ':' . $conn['port'] : '' }}</span>
                                         <span class="text-gray-300 dark:text-gray-600">&middot;</span>
                                         <span>{{ $conn['database_name'] ?? '' }}</span>
@@ -76,22 +75,18 @@
                             </div>
                             <div class="flex items-center gap-2">
                                 {{-- Toggle enabled --}}
-                                <label class="flex items-center cursor-pointer" title="{{ ($conn['enabled'] ?? false) ? __('relova::relova.disable') : __('relova::relova.enable') }}">
-                                    <div class="relative inline-flex w-11 h-6">
-                                        <input
-                                            type="checkbox"
-                                            {{ ($conn['enabled'] ?? false) ? 'checked' : '' }}
-                                            class="sr-only peer"
-                                            wire:click="toggleConnection('{{ $conn['uid'] }}')"
-                                        />
-                                        <div class="w-full h-full bg-gray-200 dark:bg-gray-600 peer-checked:bg-gradient-to-r peer-checked:from-emerald-500 peer-checked:via-emerald-600 peer-checked:to-teal-600 peer-focus:ring-emerald-300 dark:peer-focus:ring-emerald-800 rounded-full shadow-md peer-checked:shadow-lg peer-checked:shadow-emerald-500/25 transition-colors duration-200"></div>
-                                        <div class="h-5 w-5 bg-white rounded-full shadow-md absolute top-0.5 left-0.5 transition-transform duration-300 peer-checked:translate-x-5 pointer-events-none peer-checked:shadow-lg"></div>
-                                    </div>
-                                </label>
+                                @php $connEnabled = $conn['enabled'] ?? false; @endphp
+                                <div wire:click="toggleConnection('{{ $conn['uid'] }}')"
+                                    style="display:inline-flex;width:2.75rem;height:1.5rem;min-width:2.75rem;border-radius:9999px;cursor:pointer;transition:background-color .2s ease-in-out;position:relative;flex-shrink:0;{{ $connEnabled ? 'background-color:#10b981;' : 'background-color:#d1d5db;' }}"
+                                    title="{{ $connEnabled ? __('relova.disable') : __('relova.enable') }}">
+                                    <span aria-hidden="true"
+                                        style="position:absolute;top:0.125rem;{{ $connEnabled ? 'left:1.375rem;' : 'left:0.125rem;' }}width:1.25rem;height:1.25rem;border-radius:9999px;background-color:#ffffff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:left .2s ease-in-out;">
+                                    </span>
+                                </div>
                                 {{-- Test --}}
                                 <button wire:click="testExistingConnection('{{ $conn['uid'] }}')" type="button"
                                     class="p-2 text-gray-500 hover:text-amber-600 dark:text-gray-400 dark:hover:text-amber-400 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all duration-200"
-                                    title="{{ __('relova::relova.test_connection') }}">
+                                    title="{{ __('relova.test_connection') }}">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M5.636 5.636a9 9 0 1 0 12.728 0M12 3v9" />
                                     </svg>
@@ -106,7 +101,7 @@
                                 </button>
                                 {{-- Delete --}}
                                 <button wire:click="deleteConnection('{{ $conn['uid'] }}')"
-                                    wire:confirm="{{ __('relova::relova.delete_confirm') }}" type="button"
+                                    wire:confirm="{{ __('relova.delete_confirm') }}" type="button"
                                     class="p-2 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200"
                                     title="{{ __('ui.delete') }}">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
@@ -135,7 +130,7 @@
                     <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-t-2xl">
                         <div class="flex items-center justify-between">
                             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-                                {{ $editing ? __('relova::relova.edit_connection') : __('relova::relova.new_connection') }}
+                                {{ $editing ? __('relova.edit_connection') : __('relova.new_connection') }}
                             </h3>
                             <button wire:click="closeForm" type="button" class="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
@@ -147,50 +142,51 @@
 
                     {{-- Form body --}}
                     <form wire:submit.prevent="save" class="p-6 space-y-5">
-                        {{-- Name & description --}}
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova::relova.connection_name') }}</label>
-                                <input wire:model="name" type="text"
-                                    class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:focus:border-emerald-400 transition-all duration-200"
-                                    placeholder="{{ __('relova::relova.connection_name_placeholder') }}">
-                                @error('name') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-                            </div>
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova::relova.driver') }}</label>
-                                <select wire:model.live="driver_type"
-                                    class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:focus:border-emerald-400 transition-all duration-200">
-                                    @foreach($driverOptions as $key => $info)
-                                        <option value="{{ $key }}">{{ $info['display_name'] ?? $key }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
+                        {{-- Name --}}
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova.connection_name') }}</label>
+                            <input wire:model="name" type="text"
+                                class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:focus:border-emerald-400 transition-all duration-200"
+                                placeholder="{{ __('relova.connection_name_placeholder') }}">
+                            @error('name') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                         </div>
 
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova::relova.description') }}</label>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova.description') }}</label>
                             <textarea wire:model="description" rows="2"
                                 class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:focus:border-emerald-400 transition-all duration-200 resize-none"
-                                placeholder="{{ __('relova::relova.description_placeholder') }}"></textarea>
+                                placeholder="{{ __('relova.description_placeholder') }}"></textarea>
+                        </div>
+
+                        {{-- Driver --}}
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova.driver') }}</label>
+                            <select wire:model="driver_type"
+                                class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:focus:border-emerald-400 transition-all duration-200">
+                                <option value="pgsql">PostgreSQL</option>
+                                <option value="mysql">MySQL / MariaDB</option>
+                                <option value="sqlsrv">SQL Server</option>
+                            </select>
+                            @error('driver_type') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                         </div>
 
                         {{-- Host / Port / DB --}}
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
-                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova::relova.host') }}</label>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova.host') }}</label>
                                 <input wire:model="host" type="text"
                                     class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:focus:border-emerald-400 transition-all duration-200"
                                     placeholder="db.example.com">
                                 @error('host') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                             </div>
                             <div>
-                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova::relova.port') }}</label>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova.port') }}</label>
                                 <input wire:model="port" type="number"
                                     class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:focus:border-emerald-400 transition-all duration-200"
                                     placeholder="5432">
                             </div>
                             <div>
-                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova::relova.database') }}</label>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova.database') }}</label>
                                 <input wire:model="database_name" type="text"
                                     class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:focus:border-emerald-400 transition-all duration-200"
                                     placeholder="my_database">
@@ -201,50 +197,41 @@
                         {{-- Schema / Username / Password --}}
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
-                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova::relova.schema') }}</label>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova.schema') }}</label>
                                 <input wire:model="schema_name" type="text"
                                     class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:focus:border-emerald-400 transition-all duration-200"
                                     placeholder="public">
                             </div>
                             <div>
-                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova::relova.username') }}</label>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova.username') }}</label>
                                 <input wire:model="username" type="text"
                                     class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:focus:border-emerald-400 transition-all duration-200"
-                                    placeholder="{{ __('relova::relova.username') }}">
+                                    placeholder="{{ __('relova.username') }}">
                                 @error('username') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                             </div>
                             <div>
-                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova::relova.password') }}</label>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova.password') }}</label>
                                 <input wire:model="password" type="password"
                                     class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:focus:border-emerald-400 transition-all duration-200"
-                                    placeholder="{{ $editing ? __('relova::relova.password_unchanged') : __('relova::relova.password') }}">
+                                    placeholder="{{ $editing ? __('relova.password_unchanged') : __('relova.password') }}">
                                 @error('password') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                             </div>
                         </div>
 
                         {{-- Advanced settings --}}
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova::relova.cache_ttl') }}</label>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova.cache_ttl') }}</label>
                                 <input wire:model="cache_ttl" type="number"
                                     class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:focus:border-emerald-400 transition-all duration-200"
                                     placeholder="300" min="0" max="86400">
-                                <p class="mt-1 text-xs text-gray-400">{{ __('relova::relova.cache_ttl_hint') }}</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova::relova.query_mode') }}</label>
-                                <select wire:model="query_mode"
-                                    class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:focus:border-emerald-400 transition-all duration-200">
-                                    <option value="virtual">{{ __('relova::relova.mode_virtual') }}</option>
-                                    <option value="snapshot">{{ __('relova::relova.mode_snapshot') }}</option>
-                                    <option value="on_demand">{{ __('relova::relova.mode_on_demand') }}</option>
-                                </select>
+                                <p class="mt-1 text-xs text-gray-400">{{ __('relova.cache_ttl_hint') }}</p>
                             </div>
                             <div class="flex items-end pb-1">
                                 <label class="flex items-center gap-3 cursor-pointer">
                                     <input wire:model="enabled" type="checkbox"
                                         class="w-5 h-5 rounded-lg border-gray-300 dark:border-gray-600 text-emerald-600 focus:ring-emerald-500/20 transition-all duration-200">
-                                    <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ __('relova::relova.enabled') }}</span>
+                                    <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ __('relova.enabled') }}</span>
                                 </label>
                             </div>
                         </div>
@@ -259,17 +246,16 @@
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 text-gray-500 dark:text-gray-400">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5V6.75a4.5 4.5 0 1 1 9 0v3.75M3.75 21.75h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H3.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
                                     </svg>
-                                    <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ __('relova::relova.ssh_tunnel') }}</span>
-                                    <span class="text-xs text-gray-400 dark:text-gray-500">{{ __('relova::relova.ssh_tunnel_hint') }}</span>
+                                    <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ __('relova.ssh_tunnel') }}</span>
+                                    <span class="text-xs text-gray-400 dark:text-gray-500">{{ __('relova.ssh_tunnel_hint') }}</span>
                                 </div>
                                 <div class="flex items-center gap-2">
-                                    <span x-show="open" class="text-xs font-medium text-emerald-600 dark:text-emerald-400">{{ __('relova::relova.ssh_enabled_label') }}</span>
-                                    <span x-show="!open" class="text-xs font-medium text-gray-400">{{ __('relova::relova.ssh_disabled_label') }}</span>
-                                    <div class="relative inline-flex w-11 h-6 pointer-events-none">
-                                        <div :class="open ? 'bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-600 shadow-emerald-500/25' : 'bg-gray-200 dark:bg-gray-600'"
-                                            class="w-full h-full rounded-full shadow-md transition-colors duration-200"></div>
-                                        <div :class="open ? 'translate-x-5' : 'translate-x-0.5'"
-                                            class="absolute top-0.5 left-0 w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300"></div>
+                                    <span x-show="open" class="text-xs font-medium text-emerald-600 dark:text-emerald-400">{{ __('relova.ssh_enabled_label') }}</span>
+                                    <span x-show="!open" class="text-xs font-medium text-gray-400">{{ __('relova.ssh_disabled_label') }}</span>
+                                    <div :style="open ? 'background-color:#10b981;' : 'background-color:#d1d5db;'"
+                                        style="display:inline-flex;width:2.25rem;height:1.25rem;min-width:2.25rem;border-radius:9999px;position:relative;transition:background-color .2s ease-in-out;flex-shrink:0;">
+                                        <div :style="open ? 'left:1rem;' : 'left:0.125rem;'"
+                                            style="position:absolute;top:0.125rem;width:1rem;height:1rem;border-radius:9999px;background-color:#ffffff;box-shadow:0 1px 2px rgba(0,0,0,.2);transition:left .2s ease-in-out;"></div>
                                     </div>
                                 </div>
                             </div>
@@ -277,26 +263,26 @@
                             {{-- SSH fields (shown when enabled) --}}
                             <div x-show="open" x-collapse class="p-4 space-y-4 border-t border-gray-200 dark:border-gray-600">
                                 <p class="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-lg px-3 py-2">
-                                    {{ __('relova::relova.ssh_info') }}
+                                    {{ __('relova.ssh_info') }}
                                 </p>
 
                                 {{-- SSH Host / Port / User --}}
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div>
-                                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova::relova.ssh_host') }}</label>
+                                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova.ssh_host') }}</label>
                                         <input wire:model="ssh_host" type="text"
                                             class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:focus:border-emerald-400 transition-all duration-200"
-                                            placeholder="{{ __('relova::relova.ssh_host_placeholder') }}">
-                                        <p class="mt-1 text-xs text-gray-400">{{ __('relova::relova.ssh_host_hint') }}</p>
+                                            placeholder="{{ __('relova.ssh_host_placeholder') }}">
+                                        <p class="mt-1 text-xs text-gray-400">{{ __('relova.ssh_host_hint') }}</p>
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova::relova.ssh_port') }}</label>
+                                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova.ssh_port') }}</label>
                                         <input wire:model="ssh_port" type="number"
                                             class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:focus:border-emerald-400 transition-all duration-200"
                                             placeholder="22">
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova::relova.ssh_user') }}</label>
+                                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova.ssh_user') }}</label>
                                         <input wire:model="ssh_user" type="text"
                                             class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:focus:border-emerald-400 transition-all duration-200"
                                             placeholder="forge">
@@ -305,17 +291,17 @@
 
                                 {{-- Auth method --}}
                                 <div>
-                                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova::relova.ssh_auth_method') }}</label>
+                                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova.ssh_auth_method') }}</label>
                                     <div class="flex gap-4">
                                         <label class="flex items-center gap-2 cursor-pointer">
                                             <input wire:model.live="ssh_auth_method" type="radio" value="key"
                                                 class="text-emerald-600 focus:ring-emerald-500/20">
-                                            <span class="text-sm text-gray-700 dark:text-gray-300">{{ __('relova::relova.ssh_auth_key') }}</span>
+                                            <span class="text-sm text-gray-700 dark:text-gray-300">{{ __('relova.ssh_auth_key') }}</span>
                                         </label>
                                         <label class="flex items-center gap-2 cursor-pointer">
                                             <input wire:model.live="ssh_auth_method" type="radio" value="password"
                                                 class="text-emerald-600 focus:ring-emerald-500/20">
-                                            <span class="text-sm text-gray-700 dark:text-gray-300">{{ __('relova::relova.ssh_auth_password') }}</span>
+                                            <span class="text-sm text-gray-700 dark:text-gray-300">{{ __('relova.ssh_auth_password') }}</span>
                                         </label>
                                     </div>
                                 </div>
@@ -323,27 +309,27 @@
                                 {{-- Key auth fields --}}
                                 @if($ssh_auth_method === 'key')
                                     <div>
-                                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova::relova.ssh_private_key') }}</label>
+                                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova.ssh_private_key') }}</label>
                                         <textarea wire:model="ssh_private_key" rows="5"
                                             class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl text-xs font-mono text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:focus:border-emerald-400 transition-all duration-200 resize-none"
                                             placeholder="-----BEGIN OPENSSH PRIVATE KEY-----&#10;...&#10;-----END OPENSSH PRIVATE KEY-----">{{ $editing ? '' : '' }}</textarea>
                                         @if($editing)
-                                            <p class="mt-1 text-xs text-gray-400">{{ __('relova::relova.ssh_key_unchanged') }}</p>
+                                            <p class="mt-1 text-xs text-gray-400">{{ __('relova.ssh_key_unchanged') }}</p>
                                         @endif
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova::relova.ssh_passphrase') }}</label>
+                                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova.ssh_passphrase') }}</label>
                                         <input wire:model="ssh_passphrase" type="password"
                                             class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:focus:border-emerald-400 transition-all duration-200"
-                                            placeholder="{{ __('relova::relova.ssh_passphrase_optional') }}">
+                                            placeholder="{{ __('relova.ssh_passphrase_optional') }}">
                                     </div>
                                 @else
                                     <div>
-                                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova::relova.ssh_password_label') }}</label>
+                                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova.ssh_password_label') }}</label>
                                         <input wire:model="ssh_password" type="password"
                                             class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:focus:border-emerald-400 transition-all duration-200"
-                                            placeholder="{{ $editing ? __('relova::relova.password_unchanged') : __('relova::relova.ssh_password_label') }}">
-                                        <p class="mt-1 text-xs text-amber-500">{{ __('relova::relova.ssh_password_warning') }}</p>
+                                            placeholder="{{ $editing ? __('relova.password_unchanged') : __('relova.ssh_password_label') }}">
+                                        <p class="mt-1 text-xs text-amber-500">{{ __('relova.ssh_password_warning') }}</p>
                                     </div>
                                 @endif
                             </div>
@@ -363,7 +349,7 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M5.636 5.636a9 9 0 1 0 12.728 0M12 3v9" />
                                 </svg>
-                                {{ __('relova::relova.test_connection') }}
+                                {{ __('relova.test_connection') }}
                             </button>
                             <div class="flex items-center gap-3">
                                 <button wire:click="closeForm" type="button"

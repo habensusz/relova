@@ -183,4 +183,7 @@ return [
     'browser_invalid_dir' => 'Érvénytelen vagy nem elérhető könyvtár.',
     'browser_permission_denied' => 'Hozzáférés megtagadva.',
     'browser_empty' => 'Nem találhatók megfelelő fájlok ebben a könyvtárban.',
+
+    'oracle_ext_hint' => 'A pdo_oci PHP kiterjesztés szükséges (Oracle Instant Client). Telepítse az Oracle Instant Client-et, majd futtassa: pecl install oci8',
+    'sap_hana_ext_hint' => 'A pdo_odbc PHP kiterjesztés és a SAP HANA HDBODBC ODBC-meghajtó szükséges. Telepítse a SAP HANA klienst és engedélyezze a pdo_odbc-t a php.ini-ben.',
 ];

@@ -183,4 +183,7 @@ return [
     'browser_invalid_dir' => 'Ungültiges oder nicht zugängliches Verzeichnis.',
     'browser_permission_denied' => 'Zugriff verweigert.',
     'browser_empty' => 'Keine passenden Dateien in diesem Verzeichnis gefunden.',
+
+    'oracle_ext_hint' => 'Erfordert die PHP-Erweiterung pdo_oci (Oracle Instant Client). Oracle Instant Client installieren, dann: pecl install oci8',
+    'sap_hana_ext_hint' => 'Erfordert die PHP-Erweiterung pdo_odbc und den SAP HANA HDBODBC ODBC-Treiber. SAP HANA Client installieren und pdo_odbc in php.ini aktivieren.',
 ];

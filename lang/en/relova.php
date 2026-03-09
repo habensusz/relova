@@ -185,4 +185,7 @@ return [
     'browser_invalid_dir' => 'Invalid or inaccessible directory.',
     'browser_permission_denied' => 'Permission denied.',
     'browser_empty' => 'No matching files found in this directory.',
+
+    'oracle_ext_hint' => 'Requires the pdo_oci PHP extension (Oracle Instant Client). Install Oracle Instant Client then run: pecl install oci8',
+    'sap_hana_ext_hint' => 'Requires the pdo_odbc PHP extension and the SAP HANA HDBODBC ODBC driver. Install the SAP HANA Client and enable pdo_odbc in php.ini.',
 ];

@@ -166,6 +166,8 @@
                                 <option value="pgsql">PostgreSQL</option>
                                 <option value="mysql">MySQL / MariaDB</option>
                                 <option value="sqlsrv">SQL Server</option>
+                                <option value="oracle">Oracle</option>
+                                <option value="sap_hana">SAP HANA</option>
                             </select>
                             @error('driver_type') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                         </div>

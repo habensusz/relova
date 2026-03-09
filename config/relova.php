@@ -114,12 +114,11 @@ return [
     |
     */
     'drivers' => [
-        'mysql' => \Relova\Drivers\MySqlDriver::class,
-        'pgsql' => \Relova\Drivers\PostgreSqlDriver::class,
-        'sqlsrv' => \Relova\Drivers\SqlServerDriver::class,
-        // Phase 2:
-        // 'oracle' => \Relova\Drivers\OracleDriver::class,
-        // 'sap_hana' => \Relova\Drivers\SapHanaDriver::class,
+        'mysql'    => \Relova\Drivers\MySqlDriver::class,
+        'pgsql'    => \Relova\Drivers\PostgreSqlDriver::class,
+        'sqlsrv'   => \Relova\Drivers\SqlServerDriver::class,
+        'oracle'   => \Relova\Drivers\OracleDriver::class,
+        'sap_hana' => \Relova\Drivers\SapHanaDriver::class,
         // Phase 3:
         // 'csv' => \Relova\Drivers\CsvDriver::class,
         // 'excel' => \Relova\Drivers\ExcelDriver::class,

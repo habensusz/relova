@@ -623,7 +623,134 @@ Route::middleware(['auth'])->prefix('relova')->name('relova.')->group(function (
 
 ---
 
-## Exceptions
+## Automatic Request Enrichment (Middleware)
+
+Relova ships a middleware — `RelovaEnrichmentMiddleware` — that runs on every HTTP request and **transparently enriches Eloquent model instances with remote data**, as if the columns had always been part of your local database.
+
+### How it works
+
+On every request the middleware:
+
+1. **Before the controller runs** — scans route parameters for Eloquent models resolved via route model binding (covers show / edit / delete detail pages).
+2. **After the response is built** — walks variables shared with Blade views via `View::share()` or `view()->with()` (covers index / list pages).
+
+For each model that uses `HasRelovaData`, it looks up the enabled `RelovaFieldMapping` for that model's table, batch-fetches the matching remote row(s) in a single `SELECT … IN (…)`, and merges the mapped values into the model attributes — all transparently, without changing a single line of controller code.
+
+### Model setup
+
+Your Eloquent model must use the `HasRelovaData` trait:
+
+```php
+use Relova\Concerns\HasRelovaData;
+
+class Machine extends Model
+{
+    use HasRelovaData;
+}
+```
+
+The corresponding `RelovaFieldMapping` must have `local_join_key` and `remote_join_key` filled in (set via the UI or migration seed):
+
+| Column | Example | Meaning |
+|---|---|---|
+| `target_module` | `machines` | Local table name |
+| `local_join_key` | `serial_number` | Column on the local `machines` table |
+| `remote_join_key` | `SERIAL_NO` | Column in the remote ERP table |
+| `source_table` | `ASSETS` | Remote table to fetch from |
+
+### Registering the middleware
+
+**Laravel 11+ (`bootstrap/app.php`):**
+
+```php
+->withMiddleware(function (Middleware $middleware) {
+    $middleware->web(append: [
+        \Relova\Http\Middleware\RelovaEnrichmentMiddleware::class,
+    ]);
+})
+```
+
+**Laravel 10 (`app/Http/Kernel.php`):**
+
+```php
+protected $middlewareGroups = [
+    'web' => [
+        // ...existing middleware...
+        \Relova\Http\Middleware\RelovaEnrichmentMiddleware::class,
+    ],
+];
+```
+
+**Per route / group only:**
+
+```php
+Route::middleware(['auth', 'relova.enrich'])->group(function () {
+    Route::get('/machines/{machine}', MachineController::class);
+});
+```
+
+The `relova.enrich` alias is pre-registered by `RelovaServiceProvider`.
+
+### Accessing enriched data in Blade
+
+After enrichment the model carries the remote row data. Access it normally:
+
+```blade
+{{-- Direct-mapped attribute (auto-merged into model attributes) --}}
+{{ $machine->machine_name }}
+
+{{-- Raw remote column value --}}
+{{ $machine->relovaValue('ASSET_COST') }}
+
+{{-- Guard: only render remote section when remote data was found --}}
+@if($machine->hasRelovaData())
+    <span class="badge">{{ $machine->relovaValue('STATUS') }}</span>
+@endif
+```
+
+### Using the service directly
+
+You can also call `RelovaEnrichmentService` yourself for programmatic use:
+
+```php
+use Relova\Services\RelovaEnrichmentService;
+
+$service = app(RelovaEnrichmentService::class);
+
+// Enrich a single model
+$machine = $service->enrichModel($machine);
+
+// Enrich a whole collection
+$machines = $service->enrichCollection($machines);
+
+// Enrich anything (model, collection, or passthrough)
+$value = $service->enrichAny($value);
+```
+
+### Configuration
+
+```php
+// config/relova.php
+'enrichment' => [
+    // Master switch — set RELOVA_ENRICHMENT_ENABLED=false to disable
+    'enabled' => env('RELOVA_ENRICHMENT_ENABLED', true),
+
+    // Route name patterns (supports Str::is wildcards) to skip
+    'excluded_routes' => [
+        'relova.*',
+        'api.*',
+        'livewire.*',
+    ],
+
+    // Enrich models bound via route model binding
+    'enrich_route_parameters' => env('RELOVA_ENRICH_ROUTE_PARAMS', true),
+
+    // Enrich models shared to Blade views
+    'enrich_view_data' => env('RELOVA_ENRICH_VIEW_DATA', true),
+],
+```
+
+---
 
 | Exception | When thrown |
 |---|---|
@@ -663,6 +790,15 @@ SQLite in-memory is used for tests. PostgreSQL-specific migrations are guarded a
 ---
 
 ## Changelog
+
+### v1.2.0 (2026-03-09)
+
+- **Automatic Request Enrichment** — new `RelovaEnrichmentMiddleware` + `RelovaEnrichmentService`
+  - Runs on every HTTP request; enriches route-bound models and view-shared models transparently
+  - No controller changes required — models using `HasRelovaData` are enriched automatically
+  - Pre-registered `relova.enrich` middleware alias for per-route opt-in
+  - Global kill-switch (`RELOVA_ENRICHMENT_ENABLED`), per-route exclusion list
+  - `RelovaEnrichmentService` available for direct programmatic use
 
 ### v1.1.0 (2026-03-02)
 

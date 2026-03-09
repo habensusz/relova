@@ -7,11 +7,13 @@ namespace Relova;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Blade;
 use Relova\Contracts\ConnectionManager;
+use Relova\Http\Middleware\RelovaEnrichmentMiddleware;
 use Relova\Services\DriverRegistry;
 use Relova\Services\EntityReferenceService;
 use Relova\Services\HostSchemaService;
 use Relova\Services\MappingDataLoader;
 use Relova\Services\RelovaConnectionManager;
+use Relova\Services\RelovaEnrichmentService;
 use Relova\Services\SecurityService;
 use Relova\Services\SshTunnelService;
 use Relova\Services\VirtualRelationLoader;
@@ -58,10 +60,20 @@ class RelovaServiceProvider extends ServiceProvider
                 $app->make(RelovaConnectionManager::class),
             );
         });
+
+        $this->app->singleton(RelovaEnrichmentService::class, function ($app) {
+            return new RelovaEnrichmentService(
+                $app->make(VirtualRelationLoader::class),
+            );
+        });
     }
 
     public function boot(): void
     {
+        // Register the enrichment middleware alias so host apps can use
+        // Route::middleware(['relova.enrich']) or add it to a group by alias.
+        $this->app['router']->aliasMiddleware('relova.enrich', RelovaEnrichmentMiddleware::class);
+
         // Publish config
         $this->publishes([
             __DIR__.'/../config/relova.php' => config_path('relova.php'),

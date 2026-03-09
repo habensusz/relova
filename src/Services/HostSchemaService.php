@@ -84,9 +84,15 @@ class HostSchemaService
     {
         $hasDefault = $default !== null;
 
+        // Columns ending in _id (and not the PK itself) are foreign keys and
+        // should not be offered as mapping targets — they reference local
+        // relations that Relova cannot safely resolve.
+        $foreignKey = ! $primary && str_ends_with($name, '_id');
+
         $required = ! $nullable
             && ! $hasDefault
             && ! $primary
+            && ! $foreignKey
             && ! in_array($name, self::AUTO_COLUMNS, true)
             && ! str_ends_with($name, '_at');   // any timestamp-ish column
 
@@ -96,6 +102,7 @@ class HostSchemaService
             'nullable' => $nullable,
             'has_default' => $hasDefault,
             'primary' => $primary,
+            'foreign_key' => $foreignKey,
             'required' => $required,
         ];
     }
@@ -304,4 +311,3 @@ class HostSchemaService
             ->all();
     }
 }
-

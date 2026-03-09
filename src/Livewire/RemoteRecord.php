@@ -110,6 +110,18 @@ class RemoteRecord extends Component
             }
 
             if ($newRow !== []) {
+                // Only persist the remote columns that are explicitly mapped —
+                // keeping unmapped / FK fields out of the snapshot prevents
+                // Relova from accidentally overwriting local relation columns.
+                if (! empty($this->columnMappings)) {
+                    $mappedKeys = collect($this->columnMappings)
+                        ->pluck('remote_column')
+                        ->filter()
+                        ->flip()
+                        ->all();
+                    $newRow = array_intersect_key($newRow, $mappedKeys);
+                }
+
                 $this->reference->update([
                     'display_snapshot' => $newRow,
                     'snapshot_refreshed_at' => now(),

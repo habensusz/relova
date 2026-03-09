@@ -6,6 +6,7 @@ namespace Relova\Services;
 
 use Relova\Models\RelovaConnection;
 use Relova\Models\RelovaEntityReference;
+use Relova\Models\RelovaFieldMapping;
 
 /**
  * Manages virtual entity references — creating, resolving,
@@ -81,6 +82,8 @@ class EntityReferenceService
 
     /**
      * Bulk refresh stale snapshots for a connection.
+     * Only the remote columns that are explicitly mapped are fetched and stored,
+     * so unmapped / foreign-key columns cannot overwrite local relation fields.
      */
     public function refreshStaleSnapshots(RelovaConnection $connection, int $batchSize = 50): int
     {
@@ -91,8 +94,25 @@ class EntityReferenceService
             ->limit($batchSize)
             ->get();
 
+        // Pre-load all field mappings for this connection, keyed by source_table.
+        $mappings = RelovaFieldMapping::query()
+            ->where('connection_id', $connection->id)
+            ->get()
+            ->keyBy('source_table');
+
         foreach ($staleReferences as $reference) {
-            $this->refreshSnapshot($reference);
+            $mapping = $mappings->get($reference->remote_table);
+
+            $snapshotColumns = [];
+            if ($mapping !== null) {
+                $snapshotColumns = collect($mapping->column_mappings ?? [])
+                    ->pluck('remote_column')
+                    ->filter()
+                    ->values()
+                    ->all();
+            }
+
+            $this->refreshSnapshot($reference, $snapshotColumns);
             $refreshed++;
         }
 

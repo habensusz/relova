@@ -13,12 +13,11 @@
     </div>
 
     {{-- Page header --}}
-    <div class="relative bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-lg overflow-hidden">
-        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-sky-500 via-indigo-500 to-purple-500"></div>
+    <div class="relative bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-lg">
         <div class="p-6">
             <div class="flex items-start justify-between gap-4 flex-wrap">
                 <div class="flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-100 to-indigo-200 dark:from-sky-900/50 dark:to-indigo-800/50 flex items-center justify-center flex-shrink-0">
+                    <div class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-sky-600 dark:text-sky-400">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
                         </svg>
@@ -118,8 +117,7 @@
 
         {{-- Mapped fields card --}}
         @if ($mappedSection->isNotEmpty())
-            <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-lg overflow-hidden">
-                <div class="h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500"></div>
+            <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-lg">
                 <div class="p-5">
                     <h2 class="text-sm font-bold text-gray-900 dark:text-white mb-4">{{ __('relova.mapped_fields') }}</h2>
                     <div class="space-y-0 divide-y divide-gray-100 dark:divide-gray-700">
@@ -171,8 +169,7 @@
 
         {{-- All remote columns card --}}
         @if ($unmappedSection->isNotEmpty())
-            <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-lg overflow-hidden">
-                <div class="h-1 bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500"></div>
+            <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-lg">
                 <div class="p-5">
                     <h2 class="text-sm font-bold text-gray-900 dark:text-white mb-4">{{ __('relova.all_fields') }}</h2>
                     <div class="space-y-0 divide-y divide-gray-100 dark:divide-gray-700">

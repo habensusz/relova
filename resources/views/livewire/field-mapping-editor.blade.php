@@ -9,14 +9,11 @@
         {{ __('relova.relova_connector') }}
     </a>
 </div>
-<div class="relative bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-lg overflow-hidden">
-    {{-- Gradient accent --}}
-    <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-sky-500 via-indigo-500 to-purple-500"></div>
-
+<div class="relative bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-lg">
     {{-- Header --}}
     <div class="flex flex-row justify-between items-center p-5 border-b border-gray-100 dark:border-gray-700">
         <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-100 to-indigo-200 dark:from-sky-900/50 dark:to-indigo-800/50 flex items-center justify-center">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-sky-600 dark:text-sky-400">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
                 </svg>
@@ -131,7 +128,7 @@
             @endif
 
             <div class="border border-gray-100 dark:border-gray-700 rounded-xl overflow-hidden">
-                <div class="px-4 py-3 bg-gradient-to-r from-sky-50 to-indigo-50 dark:from-sky-900/10 dark:to-indigo-900/10 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                <div class="px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
                     <div>
                         <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ __('relova.column_mappings') }}</h4>
                         @if($requiredFields->isNotEmpty())
@@ -242,7 +239,7 @@
             <button wire:click="save" type="button"
                 wire:loading.attr="disabled"
                 wire:target="save"
-                class="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 rounded-xl shadow-md shadow-sky-500/25 transition-all duration-200 disabled:opacity-60">
+                class="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm transition-all duration-200 disabled:opacity-60">
                 <svg wire:loading wire:target="save" class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
@@ -255,7 +252,7 @@
         {{-- Preview results (shown below actions so they appear after clicking) --}}
         @if($showPreview)
             <div class="border border-gray-100 dark:border-gray-700 rounded-xl overflow-hidden">
-                <div class="px-4 py-3 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/10 dark:to-teal-900/10 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                <div class="px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
                     <h5 class="text-xs font-semibold text-emerald-700 dark:text-emerald-300 uppercase">{{ __('relova.mapping_preview') }}</h5>
                     <button wire:click="$set('showPreview', false)" type="button" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors duration-200">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">

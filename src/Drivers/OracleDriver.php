@@ -81,19 +81,6 @@ class OracleDriver extends AbstractPdoDriver
         ];
     }
 
-    public function buildPreviewQuery(string $table, array $columns = [], int $limit = 100): string
-    {
-        $cols = empty($columns) ? '*' : implode(', ', array_map(
-            fn (string $col) => $this->quoteIdentifier($col),
-            $columns
-        ));
-
-        $quotedTable = $this->quoteIdentifier($table);
-
-        // Oracle 12c+ row-limiting clause (ANSI SQL:2008)
-        return "SELECT {$cols} FROM {$quotedTable} FETCH FIRST {$limit} ROWS ONLY";
-    }
-
     /**
      * Oracle has no single PDO attribute for a query timeout.
      * We rely on enforceReadOnly() and database-level resource plans instead.

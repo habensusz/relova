@@ -65,6 +65,34 @@ class SapHanaDriver extends AbstractPdoDriver
         ]);
     }
 
+    public function testConnection(array $config): bool
+    {
+        if (! in_array('odbc', PDO::getAvailableDrivers(), true)) {
+            throw new ConnectionException(
+                message: 'SAP HANA connection requires the pdo_odbc PHP extension and HDBODBC ODBC driver. Please install them and restart your web server.',
+                driverName: $this->getDriverName(),
+                host: $config['host'] ?? null,
+            );
+        }
+
+        return parent::testConnection($config);
+    }
+
+    /**
+     * pdo_odbc does not support PDO::ATTR_EMULATE_PREPARES as a constructor option;
+     * passing it causes "Driver does not support this function" errors on some ODBC drivers.
+     *
+     * @return array<int, mixed>
+     */
+    protected function getPdoConstructorOptions(int $connectTimeout): array
+    {
+        return [
+            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_TIMEOUT            => $connectTimeout,
+        ];
+    }
+
     protected function setReadOnly(PDO $pdo): void
     {
         try {

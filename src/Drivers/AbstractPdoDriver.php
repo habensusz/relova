@@ -145,6 +145,22 @@ abstract class AbstractPdoDriver implements ConnectorDriver
     }
 
     /**
+     * Return PDO constructor options for this driver.
+     * Override in subclasses to exclude attributes unsupported by a specific PDO driver.
+     *
+     * @return array<int, mixed>
+     */
+    protected function getPdoConstructorOptions(int $connectTimeout): array
+    {
+        return [
+            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_TIMEOUT            => $connectTimeout,
+            PDO::ATTR_EMULATE_PREPARES   => false,
+        ];
+    }
+
+    /**
      * Create a PDO instance with read-only safety and timeout limits.
      */
     protected function createPdo(array $config): PDO
@@ -154,12 +170,7 @@ abstract class AbstractPdoDriver implements ConnectorDriver
         $password = $config['password'] ?? null;
         $connectTimeout = (int) config('relova.connection_timeout', 10);
 
-        $options = [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            PDO::ATTR_TIMEOUT => $connectTimeout,
-            PDO::ATTR_EMULATE_PREPARES => false,
-        ];
+        $options = $this->getPdoConstructorOptions($connectTimeout);
 
         try {
             $pdo = new PDO($dsn, $username, $password, $options);

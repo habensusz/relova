@@ -54,6 +54,46 @@ class OracleDriver extends AbstractPdoDriver
         ]);
     }
 
+    public function testConnection(array $config): bool
+    {
+        if (! in_array('oci', PDO::getAvailableDrivers(), true)) {
+            throw new ConnectionException(
+                message: 'Oracle connection requires the pdo_oci PHP extension. Please install it and restart your web server.',
+                driverName: $this->getDriverName(),
+                host: $config['host'] ?? null,
+            );
+        }
+
+        return parent::testConnection($config);
+    }
+
+    /**
+     * pdo_oci does not support PDO::ATTR_EMULATE_PREPARES as a constructor option.
+     * Connection timeout is governed by Oracle's sqlnet / server-side resource plans.
+     *
+     * @return array<int, mixed>
+     */
+    protected function getPdoConstructorOptions(int $connectTimeout): array
+    {
+        return [
+            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        ];
+    }
+
+    public function buildPreviewQuery(string $table, array $columns = [], int $limit = 100): string
+    {
+        $cols = empty($columns) ? '*' : implode(', ', array_map(
+            fn (string $col) => $this->quoteIdentifier($col),
+            $columns
+        ));
+
+        $quotedTable = $this->quoteIdentifier($table);
+
+        // Oracle 12c+ row-limiting clause (ANSI SQL:2008)
+        return "SELECT {$cols} FROM {$quotedTable} FETCH FIRST {$limit} ROWS ONLY";
+    }
+
     /**
      * Oracle has no single PDO attribute for a query timeout.
      * We rely on enforceReadOnly() and database-level resource plans instead.

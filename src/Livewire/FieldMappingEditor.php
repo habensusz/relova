@@ -7,6 +7,7 @@ namespace Relova\Livewire;
 use Livewire\Component;
 use Relova\Models\RelovaConnection;
 use Relova\Models\RelovaFieldMapping;
+use Relova\Services\ColumnProvisionerService;
 use Relova\Services\HostSchemaService;
 use Relova\Services\RelovaConnectionManager;
 
@@ -235,6 +236,10 @@ class FieldMappingEditor extends Component
             $mapping->update($data);
         } else {
             RelovaFieldMapping::create($data);
+
+            // Automatically provision Relova tracking columns on the target
+            // table the first time a mapping is created for it. Idempotent.
+            app(ColumnProvisionerService::class)->ensureRelovaColumns($this->target_module);
         }
 
         $this->dispatch('notify', message: __('relova.mapping_saved'));

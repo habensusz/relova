@@ -9,6 +9,7 @@ use Illuminate\Support\ServiceProvider;
 use Relova\Console\Commands\AddColumnsCommand;
 use Relova\Contracts\ConnectionManager;
 use Relova\Http\Middleware\RelovaEnrichmentMiddleware;
+use Relova\Services\ColumnProvisionerService;
 use Relova\Services\DriverRegistry;
 use Relova\Services\EntityReferenceService;
 use Relova\Services\HostSchemaService;
@@ -33,6 +34,8 @@ class RelovaServiceProvider extends ServiceProvider
         $this->app->singleton(DriverRegistry::class);
 
         $this->app->singleton(HostSchemaService::class);
+
+        $this->app->singleton(ColumnProvisionerService::class);
 
         $this->app->singleton(RelovaConnectionManager::class, function ($app) {
             return new RelovaConnectionManager(

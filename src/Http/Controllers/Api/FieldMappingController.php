@@ -66,6 +66,9 @@ class FieldMappingController extends Controller
 
         $mapping = RelovaFieldMapping::create($data);
 
+        // Dynamically add Relova tracking columns to the target table.
+        app(\Relova\Services\ColumnProvisionerService::class)->ensureRelovaColumns($mapping->target_module);
+
         return response()->json(['data' => $mapping], 201);
     }
 
@@ -119,7 +122,23 @@ class FieldMappingController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
+        $oldTargetModule = $mapping->target_module;
         $mapping->update($validator->validated());
+        $newTargetModule = $mapping->target_module;
+
+        // If target module changed, provision columns for the new table
+        // and drop from the old table if no other mappings use it.
+        if ($oldTargetModule !== $newTargetModule) {
+            app(\Relova\Services\ColumnProvisionerService::class)->ensureRelovaColumns($newTargetModule);
+
+            $remainingMappings = RelovaFieldMapping::where('target_module', $oldTargetModule)->count();
+            if ($remainingMappings === 0) {
+                app(\Relova\Services\ColumnProvisionerService::class)->dropRelovaColumns($oldTargetModule);
+            }
+        } else {
+            // Same module: just ensure columns exist (idempotent).
+            app(\Relova\Services\ColumnProvisionerService::class)->ensureRelovaColumns($newTargetModule);
+        }
 
         return response()->json(['data' => $mapping->fresh()]);
     }
@@ -139,7 +158,16 @@ class FieldMappingController extends Controller
             ->where('uid', $mappingUid)
             ->firstOrFail();
 
+        $targetModule = $mapping->target_module;
+
         $mapping->delete();
+
+        // Remove Relova tracking columns from the target table if no other
+        // mappings still use it.
+        $remainingMappings = RelovaFieldMapping::where('target_module', $targetModule)->count();
+        if ($remainingMappings === 0) {
+            app(\Relova\Services\ColumnProvisionerService::class)->dropRelovaColumns($targetModule);
+        }
 
         return response()->json(null, 204);
     }

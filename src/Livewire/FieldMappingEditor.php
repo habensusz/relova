@@ -219,6 +219,30 @@ class FieldMappingEditor extends Component
         $this->column_mappings = array_values($this->column_mappings);
     }
 
+    public function delete(): void
+    {
+        if (! $this->mappingUid) {
+            return;
+        }
+
+        $mapping = RelovaFieldMapping::where('uid', $this->mappingUid)->firstOrFail();
+        $targetModule = $mapping->target_module;
+
+        $mapping->delete();
+
+        if (RelovaFieldMapping::where('target_module', $targetModule)->count() === 0) {
+            app(ColumnProvisionerService::class)->dropRelovaColumns($targetModule);
+        }
+
+        $this->dispatch('notify', message: __('relova.mapping_deleted'));
+        $this->redirect(
+            tenancy()->initialized
+                ? tenant()->route('relova.dashboard')
+                : route('relova.dashboard'),
+            navigate: true,
+        );
+    }
+
     public function save(): void
     {
         $this->validate();

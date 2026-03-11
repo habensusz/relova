@@ -45,6 +45,9 @@ class FieldMappingEditor extends Component
     /** @var array<int, array{remote_column: string, local_field: string}> */
     public array $column_mappings = [];
 
+    // Sync / change-detection
+    public string $timestamp_column = 'updated_at';
+
     // Preview state
     public array $previewRaw = [];
 
@@ -65,6 +68,7 @@ class FieldMappingEditor extends Component
             'column_mappings' => 'required|array|min:1',
             'column_mappings.*.remote_column' => 'required|string',
             'column_mappings.*.local_field' => 'required|string',
+            'timestamp_column' => 'nullable|string|max:100',
         ];
     }
 
@@ -186,6 +190,7 @@ class FieldMappingEditor extends Component
         $this->source_table = $mapping->source_table;
         $this->enabled = $mapping->enabled;
         $this->column_mappings = $mapping->column_mappings ?? [];
+        $this->timestamp_column = $mapping->timestamp_column ?? 'updated_at';
         $this->connectionUid = $mapping->connection?->uid;
 
         if ($this->connectionUid) {
@@ -229,6 +234,7 @@ class FieldMappingEditor extends Component
             'column_mappings' => $this->column_mappings,
             'query_mode' => 'snapshot',
             'enabled' => $this->enabled,
+            'timestamp_column' => $this->timestamp_column ?: null,
         ];
 
         if ($this->mappingUid) {

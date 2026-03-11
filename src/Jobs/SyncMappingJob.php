@@ -33,7 +33,7 @@ class SyncMappingJob implements ShouldQueue
 
     /**
      * @param  int|null  $connectionId  When set, only sync mappings for this connection.
-     * @param  int|null  $mappingId     When set, only sync this specific mapping.
+     * @param  int|null  $mappingId  When set, only sync this specific mapping.
      */
     public function __construct(
         public readonly ?int $connectionId = null,
@@ -81,8 +81,42 @@ class SyncMappingJob implements ShouldQueue
         }
 
         try {
-            $sql = 'SELECT * FROM "'.$mapping->source_table.'"';
-            $rows = $connectionManager->query($connection, $sql, []);
+            $timestampColumn = $mapping->timestamp_column ?? null;
+            $lastSyncedAt = $mapping->last_synced_at;
+
+            // Option 2: Change-detection probe.
+            // When a timestamp column and a previous sync timestamp are both available,
+            // ask the source for the most recently modified row before pulling any data.
+            // If nothing is newer than our last sync, skip the full query entirely.
+            if ($timestampColumn && $lastSyncedAt) {
+                $probeSql = 'SELECT MAX("'.$timestampColumn.'") AS max_ts FROM "'.$mapping->source_table.'"';
+                $probeResult = $connectionManager->query($connection, $probeSql, []);
+                $maxTs = $probeResult[0]['max_ts'] ?? null;
+
+                if ($maxTs !== null && $lastSyncedAt->greaterThanOrEqualTo(\Illuminate\Support\Carbon::parse($maxTs))) {
+                    Log::info('Relova: no changes detected, skipping sync', [
+                        'mapping_id' => $mapping->id,
+                        'source_table' => $mapping->source_table,
+                        'last_synced_at' => $lastSyncedAt->toDateTimeString(),
+                        'max_ts' => $maxTs,
+                    ]);
+
+                    return;
+                }
+            }
+
+            // Option 3: Incremental sync.
+            // When we have both a timestamp column and a prior sync time, only fetch
+            // rows that changed after the last sync instead of the entire table.
+            if ($timestampColumn && $lastSyncedAt) {
+                $sql = 'SELECT * FROM "'.$mapping->source_table.'" WHERE "'.$timestampColumn.'" > ?';
+                $bindings = [$lastSyncedAt->toDateTimeString()];
+            } else {
+                $sql = 'SELECT * FROM "'.$mapping->source_table.'"';
+                $bindings = [];
+            }
+
+            $rows = $connectionManager->query($connection, $sql, $bindings);
 
             $synced = 0;
             $created = 0;
@@ -101,12 +135,15 @@ class SyncMappingJob implements ShouldQueue
                 $synced++;
             }
 
+            $mapping->update(['last_synced_at' => now()]);
+
             Log::info('Relova: mapping sync completed', [
                 'mapping_id' => $mapping->id,
                 'mapping_name' => $mapping->name,
                 'source_table' => $mapping->source_table,
                 'rows_synced' => $synced,
                 'machines_created_or_updated' => $created,
+                'incremental' => $timestampColumn && $lastSyncedAt,
             ]);
         } catch (\Exception $e) {
             Log::warning('Relova: mapping sync failed', [
@@ -142,4 +179,3 @@ class SyncMappingJob implements ShouldQueue
         );
     }
 }
-

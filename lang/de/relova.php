@@ -186,4 +186,12 @@ return [
 
     'oracle_ext_hint' => 'Erfordert die PHP-Erweiterung pdo_oci (Oracle Instant Client). Oracle Instant Client installieren, dann: pecl install oci8',
     'sap_hana_ext_hint' => 'Erfordert die PHP-Erweiterung pdo_odbc und den SAP HANA HDBODBC ODBC-Treiber. SAP HANA Client installieren und pdo_odbc in php.ini aktivieren.',
+
+    // Sync / Änderungserkennung
+    'sync_settings' => 'Sync-Einstellungen',
+    'sync_settings_hint' => 'Steuert die Änderungserkennung und den inkrementellen Sync. Wenn eine Spalte ausgewählt ist, prüft Relova zuerst, ob neuere Zeilen vorhanden sind (Probe), und ruft dann nur diese ab.',
+    'timestamp_column' => 'Änderungserkennungs-Spalte',
+    'timestamp_column_none' => '-- Keine Änderungserkennung (immer vollständiger Sync) --',
+    'timestamp_column_placeholder' => 'z.B. updated_at',
+    'timestamp_column_hint' => 'Spalte in der Remote-Tabelle mit dem Änderungs-Zeitstempel. Wenn gesetzt, werden nur Zeilen abgerufen, die nach dem letzten Sync geändert wurden.',
 ];

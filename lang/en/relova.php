@@ -188,4 +188,12 @@ return [
 
     'oracle_ext_hint' => 'Requires the pdo_oci PHP extension (Oracle Instant Client). Install Oracle Instant Client then run: pecl install oci8',
     'sap_hana_ext_hint' => 'Requires the pdo_odbc PHP extension and the SAP HANA HDBODBC ODBC driver. Install the SAP HANA Client and enable pdo_odbc in php.ini.',
+
+    // Sync / change-detection settings
+    'sync_settings' => 'Sync Settings',
+    'sync_settings_hint' => 'Controls change detection and incremental sync. When a column is selected, Relova first checks whether any rows are newer than the last sync (probe) and then only fetches those rows, skipping unchanged data.',
+    'timestamp_column' => 'Change Detection Column',
+    'timestamp_column_none' => '-- No change detection (always full sync) --',
+    'timestamp_column_placeholder' => 'e.g. updated_at',
+    'timestamp_column_hint' => 'Remote column holding the last-modified timestamp. When set, only rows newer than the previous sync are fetched.',
 ];

@@ -186,4 +186,12 @@ return [
 
     'oracle_ext_hint' => 'A pdo_oci PHP kiterjesztés szükséges (Oracle Instant Client). Telepítse az Oracle Instant Client-et, majd futtassa: pecl install oci8',
     'sap_hana_ext_hint' => 'A pdo_odbc PHP kiterjesztés és a SAP HANA HDBODBC ODBC-meghajtó szükséges. Telepítse a SAP HANA klienst és engedélyezze a pdo_odbc-t a php.ini-ben.',
+
+    // Szinkron / változásfelderítési beállítások
+    'sync_settings' => 'Szinkron beállítások',
+    'sync_settings_hint' => 'Szabályozza a változásfelderítést és a növekményes szinkront. Ha egy oszlop ki van választva, a Relova először ellenőrzi, hogy vannak-e az utolsó szinkron óta módosult sorok, majd csak azokat kéri le.',
+    'timestamp_column' => 'Változásfelderítési oszlop',
+    'timestamp_column_none' => '-- Nincs változásfelderítés (mindig teljes szinkron) --',
+    'timestamp_column_placeholder' => 'pl. updated_at',
+    'timestamp_column_hint' => 'A módosítási időbélyeget tároló távoli oszlop. Ha be van állítva, csak az utolsó szinkron utáni sorok kerülnek lekérésre.',
 ];

@@ -95,6 +95,31 @@
                 placeholder="{{ __('relova.description_placeholder') }}"></textarea>
         </div>
 
+        {{-- Sync / change-detection settings --}}
+        <div class="border border-gray-100 dark:border-gray-700 rounded-xl overflow-hidden">
+            <div class="px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
+                <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ __('relova.sync_settings') }}</h4>
+                <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{{ __('relova.sync_settings_hint') }}</p>
+            </div>
+            <div class="p-4">
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova.timestamp_column') }}</label>
+                @if(count($remoteColumns) > 0)
+                    <select wire:model="timestamp_column"
+                        class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:focus:border-sky-400 transition-all duration-200">
+                        <option value="">{{ __('relova.timestamp_column_none') }}</option>
+                        @foreach($remoteColumns as $col)
+                            <option value="{{ $col['name'] }}">{{ $col['name'] }} ({{ $col['type'] ?? '' }})</option>
+                        @endforeach
+                    </select>
+                @else
+                    <input wire:model="timestamp_column" type="text"
+                        class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:focus:border-sky-400 transition-all duration-200"
+                        placeholder="{{ __('relova.timestamp_column_placeholder') }}">
+                @endif
+                <p class="mt-1.5 text-xs text-gray-400 dark:text-gray-500">{{ __('relova.timestamp_column_hint') }}</p>
+            </div>
+        </div>
+
         {{-- Column mapping table --}}
         @if($source_table && $target_module)
             @php

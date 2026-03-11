@@ -30,6 +30,7 @@ class RelovaFieldMapping extends Model
             'enabled' => 'boolean',
             'usage_count' => 'integer',
             'last_used_at' => 'datetime',
+            'last_synced_at' => 'datetime',
         ];
     }
 

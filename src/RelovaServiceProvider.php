@@ -9,6 +9,10 @@ use Illuminate\Support\ServiceProvider;
 use Relova\Console\Commands\AddColumnsCommand;
 use Relova\Contracts\ConnectionManager;
 use Relova\Http\Middleware\RelovaEnrichmentMiddleware;
+use Relova\Models\RelovaConnection;
+use Relova\Models\RelovaFieldMapping;
+use Relova\Observers\RelovaConnectionObserver;
+use Relova\Observers\RelovaFieldMappingObserver;
 use Relova\Services\ColumnProvisionerService;
 use Relova\Services\DriverRegistry;
 use Relova\Services\EntityReferenceService;
@@ -77,6 +81,10 @@ class RelovaServiceProvider extends ServiceProvider
         // Register the enrichment middleware alias so host apps can use
         // Route::middleware(['relova.enrich']) or add it to a group by alias.
         $this->app['router']->aliasMiddleware('relova.enrich', RelovaEnrichmentMiddleware::class);
+
+        // Register model observers
+        RelovaConnection::observe(RelovaConnectionObserver::class);
+        RelovaFieldMapping::observe(RelovaFieldMappingObserver::class);
 
         // Register Artisan commands
         if ($this->app->runningInConsole()) {

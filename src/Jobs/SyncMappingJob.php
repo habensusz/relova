@@ -159,9 +159,23 @@ class SyncMappingJob implements ShouldQueue
         RelovaFieldMapping $mapping,
         array $row,
     ): RelovaEntityReference {
-        // Use a stable hash of the row as the primary identifier when no
-        // explicit primary key column is configured.
-        $hash = md5(serialize($row));
+        // Prefer the row's own 'id' as a stable, collision-free identifier.
+        // Hashing the full row is unsafe for incremental sync because the
+        // timestamp column changes on every update, producing a different hash
+        // and causing duplicates instead of updates.
+        if (isset($row['id'])) {
+            $primaryColumn = 'id';
+            $primaryValue = (string) $row['id'];
+        } else {
+            // Exclude the configured timestamp column from the hash so the
+            // identifier stays stable between full and incremental syncs.
+            $stable = $row;
+            if ($mapping->timestamp_column && isset($stable[$mapping->timestamp_column])) {
+                unset($stable[$mapping->timestamp_column]);
+            }
+            $primaryColumn = '_row_hash';
+            $primaryValue = md5(serialize($stable));
+        }
 
         $mappedSnapshot = $mapping->applyToRow($row);
 
@@ -169,8 +183,8 @@ class SyncMappingJob implements ShouldQueue
             [
                 'connection_id' => $connection->id,
                 'remote_table' => $mapping->source_table,
-                'remote_primary_column' => '_row_hash',
-                'remote_primary_value' => $hash,
+                'remote_primary_column' => $primaryColumn,
+                'remote_primary_value' => $primaryValue,
             ],
             [
                 'display_snapshot' => array_merge($row, $mappedSnapshot),

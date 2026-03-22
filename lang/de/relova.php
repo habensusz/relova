@@ -194,4 +194,18 @@ return [
     'timestamp_column_none' => '-- Keine Änderungserkennung (immer vollständiger Sync) --',
     'timestamp_column_placeholder' => 'z.B. updated_at',
     'timestamp_column_hint' => 'Spalte in der Remote-Tabelle mit dem Änderungs-Zeitstempel. Wenn gesetzt, werden nur Zeilen abgerufen, die nach dem letzten Sync geändert wurden.',
+
+    // Widget-Konfiguration
+    'widget_config' => [
+        'title' => 'Widget-Layout',
+        'configure' => 'Widget-Felder konfigurieren',
+        'save' => 'Layout speichern',
+        'saving' => 'Speichern...',
+        'reset' => 'Auf Standard zurücksetzen',
+        'reset_confirm' => 'Alle Feldeinstellungen auf Standard zurücksetzen? Benutzerdefinierte Beschriftungen und Reihenfolge gehen verloren.',
+        'group_placeholder' => 'Gruppe...',
+        'hide_field' => 'Feld ausblenden',
+        'show_field' => 'Feld einblenden',
+        'no_fields' => 'Keine Felder für dieses Widget verfügbar.',
+    ],
 ];

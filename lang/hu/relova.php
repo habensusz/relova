@@ -194,4 +194,18 @@ return [
     'timestamp_column_none' => '-- Nincs változásfelderítés (mindig teljes szinkron) --',
     'timestamp_column_placeholder' => 'pl. updated_at',
     'timestamp_column_hint' => 'A módosítási időbélyeget tároló távoli oszlop. Ha be van állítva, csak az utolsó szinkron utáni sorok kerülnek lekérésre.',
+
+    // Widget konfiguráció
+    'widget_config' => [
+        'title' => 'Widget elrendezés',
+        'configure' => 'Widget mezők konfigurálása',
+        'save' => 'Elrendezés mentése',
+        'saving' => 'Mentés...',
+        'reset' => 'Alapértelmezés visszaállítása',
+        'reset_confirm' => 'Visszaállítja az összes mezőbeállítást az alapértelmezésre? Az egyéni címkék és a sorrend elvész.',
+        'group_placeholder' => 'Csoport...',
+        'hide_field' => 'Mező elrejtése',
+        'show_field' => 'Mező megjelenítése',
+        'no_fields' => 'Nincsenek elérhető mezők ehhez a widgethez.',
+    ],
 ];

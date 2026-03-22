@@ -7,15 +7,24 @@ namespace Relova;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
 use Relova\Console\Commands\AddColumnsCommand;
+use Relova\Console\Commands\AddCustomFieldsCommand;
 use Relova\Contracts\ConnectionManager;
 use Relova\Http\Middleware\RelovaEnrichmentMiddleware;
+use Relova\Models\CustomFieldDefinition;
+use Relova\Models\CustomFieldWidgetConfig;
+use Relova\Models\CustomFieldWidgetItem;
 use Relova\Models\RelovaConnection;
 use Relova\Models\RelovaFieldMapping;
+use Relova\Observers\CustomFieldDefinitionObserver;
 use Relova\Observers\RelovaConnectionObserver;
 use Relova\Observers\RelovaFieldMappingObserver;
+use Relova\Observers\WidgetConfigObserver;
+use Relova\Observers\WidgetItemObserver;
 use Relova\Services\ColumnProvisionerService;
+use Relova\Services\CustomFieldValidator;
 use Relova\Services\DriverRegistry;
 use Relova\Services\EntityReferenceService;
+use Relova\Services\FormFieldMerger;
 use Relova\Services\HostSchemaService;
 use Relova\Services\MappingDataLoader;
 use Relova\Services\RelovaConnectionManager;
@@ -40,6 +49,10 @@ class RelovaServiceProvider extends ServiceProvider
         $this->app->singleton(HostSchemaService::class);
 
         $this->app->singleton(ColumnProvisionerService::class);
+
+        $this->app->singleton(CustomFieldValidator::class);
+
+        $this->app->singleton(FormFieldMerger::class);
 
         $this->app->singleton(RelovaConnectionManager::class, function ($app) {
             return new RelovaConnectionManager(
@@ -85,11 +98,15 @@ class RelovaServiceProvider extends ServiceProvider
         // Register model observers
         RelovaConnection::observe(RelovaConnectionObserver::class);
         RelovaFieldMapping::observe(RelovaFieldMappingObserver::class);
+        CustomFieldDefinition::observe(CustomFieldDefinitionObserver::class);
+        CustomFieldWidgetConfig::observe(WidgetConfigObserver::class);
+        CustomFieldWidgetItem::observe(WidgetItemObserver::class);
 
         // Register Artisan commands
         if ($this->app->runningInConsole()) {
             $this->commands([
                 AddColumnsCommand::class,
+                AddCustomFieldsCommand::class,
             ]);
         }
 
@@ -136,6 +153,8 @@ class RelovaServiceProvider extends ServiceProvider
             \Livewire\Livewire::component('relova-schema-browser', \Relova\Livewire\SchemaBrowser::class);
             \Livewire\Livewire::component('relova-asset-picker', \Relova\Livewire\AssetPicker::class);
             \Livewire\Livewire::component('relova-remote-record', \Relova\Livewire\RemoteRecord::class);
+            \Livewire\Livewire::component('relova-custom-field-manager', \Relova\Livewire\CustomFieldManager::class);
+            \Livewire\Livewire::component('relova-widget-config-editor', \Relova\Livewire\WidgetConfigEditor::class);
         }
 
         // Blade directive: sets $isRemote = true when $record is a RelovaRow (remote UNION row).

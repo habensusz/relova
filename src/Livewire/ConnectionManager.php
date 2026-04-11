@@ -124,6 +124,16 @@ class ConnectionManager extends Component
             ->toArray();
     }
 
+    public function updatedDriverType(string $value): void
+    {
+        $this->port = match ($value) {
+            'mysql' => 3306,
+            'pgsql' => 5432,
+            'sqlsrv' => 1433,
+            default => null,
+        };
+    }
+
     public function openCreateForm(): void
     {
         $this->resetForm();

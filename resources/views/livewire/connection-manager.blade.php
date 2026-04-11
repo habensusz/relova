@@ -9,7 +9,9 @@
         {{ __('relova.relova_connector') }}
     </a>
 </div>
-<div class="relative bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-lg">
+<div class="relative bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-lg overflow-hidden">
+    {{-- Accent bar --}}
+    <div class="h-1 bg-gradient-to-r from-teal-500 to-emerald-400"></div>
     {{-- Header --}}
     <div class="flex flex-row justify-between items-center p-5 border-b border-gray-100 dark:border-gray-700">
         <div class="flex items-center gap-3">
@@ -45,70 +47,160 @@
                 <p class="text-sm text-gray-400 dark:text-gray-500">{{ __('relova.no_connections_hint') }}</p>
             </div>
         @else
-            <div class="grid gap-3">
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 @foreach($connections as $conn)
+                    @php
+                        $connEnabled = $conn['enabled'] ?? false;
+                        $healthStatus = $conn['health_status'] ?? 'unknown';
+
+                        $stripClass = match(true) {
+                            ! $connEnabled => 'from-gray-300 to-gray-400',
+                            $healthStatus === 'healthy' => 'from-teal-500 to-emerald-400',
+                            $healthStatus === 'degraded' => 'from-amber-400 to-yellow-400',
+                            $healthStatus === 'unhealthy' => 'from-red-500 to-red-400',
+                            default => 'from-gray-300 to-gray-400',
+                        };
+
+                        $connBorder = match(true) {
+                            ! $connEnabled => 'border-gray-100 dark:border-gray-700',
+                            $healthStatus === 'healthy' => 'border-teal-200 dark:border-teal-800/50',
+                            $healthStatus === 'unhealthy' => 'border-red-200 dark:border-red-800/50',
+                            default => 'border-gray-100 dark:border-gray-700',
+                        };
+
+                        $pillBg = match(true) {
+                            ! $connEnabled => 'bg-gray-100 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400',
+                            $healthStatus === 'healthy' => 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
+                            $healthStatus === 'degraded' => 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+                            $healthStatus === 'unhealthy' => 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+                            default => 'bg-gray-100 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400',
+                        };
+
+                        $statusLabel = match(true) {
+                            ! $connEnabled => __('relova::relova.status_disabled'),
+                            $healthStatus === 'healthy' => __('relova::relova.connected'),
+                            $healthStatus === 'degraded' => __('relova::relova.degraded'),
+                            $healthStatus === 'unhealthy' => __('relova::relova.status_error'),
+                            default => __('relova::relova.status_unknown'),
+                        };
+
+                        $driverLabel = match($conn['driver_type'] ?? '') {
+                            'mysql' => 'MySQL',
+                            'pgsql' => 'PG',
+                            'sqlsrv' => 'MSSQL',
+                            'oracle' => 'ORA',
+                            'sap_hana' => 'SAP',
+                            'csv' => 'CSV',
+                            'xlsx' => 'XLS',
+                            default => 'DB',
+                        };
+
+                        $driverBg = match($conn['driver_type'] ?? '') {
+                            'mysql' => 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400',
+                            'pgsql' => 'bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400',
+                            'sqlsrv' => 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
+                            'oracle' => 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400',
+                            'sap_hana' => 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
+                            'csv' => 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
+                            'xlsx' => 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400',
+                            default => 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400',
+                        };
+                    @endphp
                     <div wire:key="conn-{{ $conn['uid'] }}"
-                        class="p-4 rounded-xl border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all duration-200 bg-gray-50/50 dark:bg-gray-700/30">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-3">
-                                {{-- Health indicator --}}
-                                @php
-                                    $healthColor = match($conn['health_status'] ?? 'unknown') {
-                                        'healthy' => 'bg-emerald-500',
-                                        'degraded' => 'bg-amber-500',
-                                        'unhealthy' => 'bg-red-500',
-                                        default => 'bg-gray-400',
-                                    };
-                                @endphp
-                                <div class="w-2.5 h-2.5 rounded-full {{ $healthColor }}"></div>
-                                <div>
-                                    <div class="font-semibold text-gray-900 dark:text-white text-sm">{{ $conn['name'] }}</div>
-                                    <div class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2 mt-0.5">
-                                        <span>{{ $conn['host'] ?? '' }}{{ $conn['port'] ? ':' . $conn['port'] : '' }}</span>
-                                        <span class="text-gray-300 dark:text-gray-600">&middot;</span>
-                                        <span>{{ $conn['database_name'] ?? '' }}</span>
-                                    </div>
+                        class="relative bg-white dark:bg-gray-800 rounded-2xl border {{ $connBorder }} shadow hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col">
+                        {{-- Status strip --}}
+                        <div class="h-1 bg-gradient-to-r {{ $stripClass }}"></div>
+
+                        <div class="p-4 flex flex-col gap-3 flex-1">
+                            {{-- Top row: driver badge + status pill --}}
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="w-10 h-10 rounded-xl {{ $driverBg }} flex items-center justify-center font-mono text-xs font-bold flex-shrink-0">
+                                    {{ $driverLabel }}
                                 </div>
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium {{ $pillBg }}">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+                                    {{ $statusLabel }}
+                                </span>
                             </div>
-                            <div class="flex items-center gap-2">
+
+                            {{-- Name and endpoint --}}
+                            <div>
+                                <div class="font-semibold text-gray-900 dark:text-white text-sm">{{ $conn['name'] }}</div>
+                                @if(! empty($conn['host']))
+                                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-mono">
+                                        {{ $conn['host'] }}{{ ! empty($conn['port']) ? ':' . $conn['port'] : '' }}{{ ! empty($conn['database_name']) ? ' · ' . $conn['database_name'] : '' }}
+                                    </div>
+                                @endif
+                                @if(! empty($conn['description']))
+                                    <div class="text-xs text-gray-400 dark:text-gray-500 mt-1">{{ $conn['description'] }}</div>
+                                @endif
+                            </div>
+
+                            {{-- Last health check --}}
+                            @if(! empty($conn['last_health_check_at']))
+                                <div class="text-xs text-gray-400 dark:text-gray-500">
+                                    {{ __('relova::relova.last_checked') }}: {{ \Carbon\Carbon::parse($conn['last_health_check_at'])->diffForHumans() }}
+                                </div>
+                            @endif
+
+                            <div class="flex-1"></div>
+
+                            {{-- Footer: toggle + action buttons --}}
+                            <div class="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
                                 {{-- Toggle enabled --}}
-                                @php $connEnabled = $conn['enabled'] ?? false; @endphp
                                 <div wire:click="toggleConnection('{{ $conn['uid'] }}')"
                                     style="display:inline-flex;width:2.75rem;height:1.5rem;min-width:2.75rem;border-radius:9999px;cursor:pointer;transition:background-color .2s ease-in-out;position:relative;flex-shrink:0;{{ $connEnabled ? 'background-color:#10b981;' : 'background-color:#d1d5db;' }}"
-                                    title="{{ $connEnabled ? __('relova.disable') : __('relova.enable') }}">
+                                    title="{{ $connEnabled ? __('relova::relova.disable') : __('relova::relova.enable') }}">
                                     <span aria-hidden="true"
                                         style="position:absolute;top:0.125rem;{{ $connEnabled ? 'left:1.375rem;' : 'left:0.125rem;' }}width:1.25rem;height:1.25rem;border-radius:9999px;background-color:#ffffff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:left .2s ease-in-out;">
                                     </span>
                                 </div>
-                                {{-- Test --}}
-                                <button wire:click="testExistingConnection('{{ $conn['uid'] }}')" type="button"
-                                    class="p-2 text-gray-500 hover:text-amber-600 dark:text-gray-400 dark:hover:text-amber-400 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all duration-200"
-                                    title="{{ __('relova.test_connection') }}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5.636 5.636a9 9 0 1 0 12.728 0M12 3v9" />
-                                    </svg>
-                                </button>
-                                {{-- Edit --}}
-                                <button wire:click="openEditForm('{{ $conn['uid'] }}')" type="button"
-                                    class="p-2 text-gray-500 hover:text-sky-600 dark:text-gray-400 dark:hover:text-sky-400 rounded-lg hover:bg-sky-50 dark:hover:bg-sky-900/20 transition-all duration-200"
-                                    title="{{ __('ui.edit') }}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z" />
-                                    </svg>
-                                </button>
-                                {{-- Delete --}}
-                                <button wire:click="deleteConnection('{{ $conn['uid'] }}')"
-                                    wire:confirm="{{ __('relova.delete_confirm') }}" type="button"
-                                    class="p-2 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200"
-                                    title="{{ __('ui.delete') }}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                                    </svg>
-                                </button>
+
+                                <div class="flex items-center gap-1">
+                                    {{-- Test --}}
+                                    <button wire:click="testExistingConnection('{{ $conn['uid'] }}')" type="button"
+                                        class="p-1.5 text-gray-400 hover:text-amber-600 dark:text-gray-500 dark:hover:text-amber-400 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all duration-200"
+                                        title="{{ __('relova::relova.test_connection') }}">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M5.636 5.636a9 9 0 1 0 12.728 0M12 3v9" />
+                                        </svg>
+                                    </button>
+                                    {{-- Edit --}}
+                                    <button wire:click="openEditForm('{{ $conn['uid'] }}')" type="button"
+                                        class="p-1.5 text-gray-400 hover:text-sky-600 dark:text-gray-500 dark:hover:text-sky-400 rounded-lg hover:bg-sky-50 dark:hover:bg-sky-900/20 transition-all duration-200"
+                                        title="{{ __('ui.edit') }}">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z" />
+                                        </svg>
+                                    </button>
+                                    {{-- Delete --}}
+                                    <button wire:click="deleteConnection('{{ $conn['uid'] }}')"
+                                        wire:confirm="{{ __('relova::relova.delete_confirm') }}" type="button"
+                                        class="p-1.5 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200"
+                                        title="{{ __('ui.delete') }}">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                        </svg>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 @endforeach
+
+                {{-- Add connector card --}}
+                <button wire:click="openCreateForm" type="button"
+                    class="flex flex-col items-center justify-center gap-2.5 p-6 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-600 hover:border-teal-400 dark:hover:border-teal-500 hover:bg-teal-50/50 dark:hover:bg-teal-900/10 text-gray-400 dark:text-gray-500 hover:text-teal-600 dark:hover:text-teal-400 transition-all duration-200 min-h-[160px]">
+                    <div class="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                        </svg>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-sm font-medium">{{ __('relova::relova.new_connection') }}</div>
+                        <div class="text-xs mt-0.5">{{ __('relova::relova.add_connector_hint') }}</div>
+                    </div>
+                </button>
             </div>
         @endif
     </div>

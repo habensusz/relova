@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Relova\Jobs;
 
-use App\Services\RelovaMachineShadowService;
+use App\Contracts\Relova\MachineShadowResolver;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -19,7 +19,7 @@ use Relova\Services\RelovaConnectionManager;
 /**
  * Fetches all rows from every active mapping's remote source table,
  * upserts RelovaEntityReference snapshots, and creates/updates local
- * Machine shadow rows via RelovaMachineShadowService.
+ * Machine shadow rows via MachineShadowResolver.
  *
  * Dispatched whenever a connection or mapping is enabled.
  */
@@ -42,7 +42,7 @@ class SyncMappingJob implements ShouldQueue
 
     public function handle(
         RelovaConnectionManager $connectionManager,
-        RelovaMachineShadowService $shadowService,
+        MachineShadowResolver $shadowService,
     ): void {
         $mappings = $this->resolveMappings();
 
@@ -72,7 +72,7 @@ class SyncMappingJob implements ShouldQueue
     private function syncMapping(
         RelovaFieldMapping $mapping,
         RelovaConnectionManager $connectionManager,
-        RelovaMachineShadowService $shadowService,
+        MachineShadowResolver $shadowService,
     ): void {
         $connection = $mapping->connection;
 

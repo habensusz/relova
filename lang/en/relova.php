@@ -20,6 +20,13 @@ return [
     'connection_deleted' => 'Connection deleted.',
     'no_connections' => 'No connections configured.',
     'no_connections_hint' => 'Create a connection to start linking external databases.',
+    'connected' => 'Connected',
+    'degraded' => 'Degraded',
+    'status_error' => 'Error',
+    'status_disabled' => 'Disabled',
+    'status_unknown' => 'Unknown',
+    'last_checked' => 'Last checked',
+    'add_connector_hint' => 'Connect a new data source',
     'delete_confirm' => 'Are you sure you want to delete this connection? All associated mappings and references will be removed.',
 
     // Connection form

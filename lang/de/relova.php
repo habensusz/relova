@@ -20,6 +20,13 @@ return [
     'connection_deleted' => 'Verbindung gelöscht.',
     'no_connections' => 'Keine Verbindungen konfiguriert.',
     'no_connections_hint' => 'Erstellen Sie eine Verbindung, um externe Datenbanken zu verknüpfen.',
+    'connected' => 'Verbunden',
+    'degraded' => 'Beeinträchtigt',
+    'status_error' => 'Fehler',
+    'status_disabled' => 'Deaktiviert',
+    'status_unknown' => 'Unbekannt',
+    'last_checked' => 'Zuletzt geprüft',
+    'add_connector_hint' => 'Neue Datenquelle verbinden',
     'delete_confirm' => 'Sind Sie sicher, dass Sie diese Verbindung löschen möchten? Alle zugehörigen Zuordnungen und Referenzen werden entfernt.',
 
     // Verbindungsformular

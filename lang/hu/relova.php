@@ -20,6 +20,13 @@ return [
     'connection_deleted' => 'Kapcsolat törölve.',
     'no_connections' => 'Nincsenek konfigurált kapcsolatok.',
     'no_connections_hint' => 'Hozzon létre egy kapcsolatot külső adatbázisok összekapcsolásához.',
+    'connected' => 'Csatlakozva',
+    'degraded' => 'Csökkentett teljesítmény',
+    'status_error' => 'Hiba',
+    'status_disabled' => 'Letiltva',
+    'status_unknown' => 'Ismeretlen',
+    'last_checked' => 'Utoljára ellenőrizve',
+    'add_connector_hint' => 'Csatlakoztasson új adatforrást',
     'delete_confirm' => 'Biztosan törölni szeretné ezt a kapcsolatot? Minden hozzárendelt leképezés és referencia eltávolításra kerül.',
 
     // Kapcsolat űrlap

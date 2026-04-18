@@ -26,6 +26,9 @@ return [
     'status_disabled' => 'Deaktiviert',
     'status_unknown' => 'Unbekannt',
     'last_checked' => 'Zuletzt geprüft',
+    'connection_host' => 'Verbindung / Host',
+    'fields_abbrev' => 'Fld.',
+    'status' => 'Status',
     'add_connector_hint' => 'Neue Datenquelle verbinden',
     'delete_confirm' => 'Sind Sie sicher, dass Sie diese Verbindung löschen möchten? Alle zugehörigen Zuordnungen und Referenzen werden entfernt.',
 

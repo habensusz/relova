@@ -29,7 +29,11 @@ class WidgetItemObserver
     {
         $config = $item->config;
         if ($config) {
-            Cache::forget(RelovaCacheKeys::widgetLayout($config->widget_key));
+            try {
+                Cache::forget(RelovaCacheKeys::widgetLayout($config->widget_key));
+            } catch (\BadMethodCallException) {
+                // Cache store does not support tagging — skip invalidation
+            }
         }
     }
 }

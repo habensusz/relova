@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Relova\Livewire;
 
+use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Collection;
 use Livewire\Component;
 use Relova\Models\CustomFieldDefinition;
 
@@ -16,7 +18,7 @@ class CustomFieldManager extends Component
 {
     public string $entityType = '';
 
-    /** @var \Illuminate\Database\Eloquent\Collection<int, CustomFieldDefinition> */
+    /** @var Collection<int, CustomFieldDefinition> */
     public $definitions = [];
 
     // Form state
@@ -179,7 +181,7 @@ class CustomFieldManager extends Component
         $this->resetValidation();
     }
 
-    public function render(): \Illuminate\Contracts\View\View
+    public function render(): View
     {
         return view('relova::livewire.custom-field-manager');
     }

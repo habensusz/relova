@@ -7,103 +7,87 @@ namespace Relova\Http\Controllers\Api;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Relova\Exceptions\ConnectionException;
+use Relova\Exceptions\SsrfException;
 use Relova\Models\RelovaConnection;
-use Relova\Services\RelovaConnectionManager;
+use Relova\Services\ConnectionRegistry;
+use Relova\Services\DriverRegistry;
+use Relova\Services\SchemaInspector;
 
 class SchemaController extends Controller
 {
     public function __construct(
-        protected RelovaConnectionManager $connectionManager,
+        private readonly SchemaInspector $inspector,
+        private readonly ConnectionRegistry $connections,
+        private readonly DriverRegistry $drivers,
     ) {}
 
-    /**
-     * List tables for a connection.
-     */
     public function tables(Request $request, string $connectionUid): JsonResponse
     {
-        $tenantId = $request->attributes->get('relova_tenant_id');
+        $connection = $this->find($request, $connectionUid);
 
-        $connection = RelovaConnection::forTenant($tenantId)
-            ->where('uid', $connectionUid)
-            ->firstOrFail();
-
-        $tables = $this->connectionManager->getTables($connection);
-
-        return response()->json([
-            'data' => $tables,
-            'meta' => [
-                'connection' => $connection->name,
-                'driver' => $connection->driver_type,
-                'total' => count($tables),
-            ],
-        ]);
+        try {
+            return response()->json(['data' => $this->inspector->tables($connection)]);
+        } catch (SsrfException|ConnectionException $e) {
+            return $this->errorResponse($e);
+        }
     }
 
-    /**
-     * List columns for a specific table.
-     */
     public function columns(Request $request, string $connectionUid, string $table): JsonResponse
     {
-        $tenantId = $request->attributes->get('relova_tenant_id');
+        $connection = $this->find($request, $connectionUid);
 
-        $connection = RelovaConnection::forTenant($tenantId)
-            ->where('uid', $connectionUid)
-            ->firstOrFail();
-
-        $columns = $this->connectionManager->getColumns($connection, $table);
-
-        return response()->json([
-            'data' => $columns,
-            'meta' => [
-                'connection' => $connection->name,
-                'table' => $table,
-                'total' => count($columns),
-            ],
-        ]);
+        try {
+            return response()->json(['data' => $this->inspector->columns($connection, $table)]);
+        } catch (SsrfException|ConnectionException $e) {
+            return $this->errorResponse($e);
+        }
     }
 
-    /**
-     * Preview data from a remote table.
-     */
     public function preview(Request $request, string $connectionUid, string $table): JsonResponse
     {
-        $tenantId = $request->attributes->get('relova_tenant_id');
+        $connection = $this->find($request, $connectionUid);
+        $limit = min((int) $request->query('limit', 25), 100);
+        $columns = array_filter(explode(',', (string) $request->query('columns', '')));
 
-        $connection = RelovaConnection::forTenant($tenantId)
-            ->where('uid', $connectionUid)
-            ->firstOrFail();
+        try {
+            $this->connections->assertHostAllowed($connection);
+            $driver = $this->drivers->resolve($connection->driver);
+            $sql = $driver->buildPreviewQuery($table, $columns, $limit);
+            $config = $this->connections->buildConfig($connection);
 
-        $limit = min((int) $request->get('limit', 50), (int) config('relova.max_rows_per_query', 10000));
-        $columns = $request->get('columns', []);
+            $rows = [];
+            foreach ($driver->query($config, $sql) as $row) {
+                $rows[] = $row;
+            }
 
-        $rows = $this->connectionManager->preview($connection, $table, $columns, $limit);
-
-        return response()->json([
-            'data' => $rows,
-            'meta' => [
-                'connection' => $connection->name,
-                'table' => $table,
-                'row_count' => count($rows),
-                'limit' => $limit,
-            ],
-        ]);
+            return response()->json(['data' => $rows, 'meta' => ['count' => count($rows), 'limit' => $limit]]);
+        } catch (SsrfException|ConnectionException $e) {
+            return $this->errorResponse($e);
+        }
     }
 
-    /**
-     * Flush cached schema for a connection.
-     */
     public function flushCache(Request $request, string $connectionUid): JsonResponse
     {
-        $tenantId = $request->attributes->get('relova_tenant_id');
+        $connection = $this->find($request, $connectionUid);
+        $this->inspector->invalidate($connection);
 
-        $connection = RelovaConnection::forTenant($tenantId)
-            ->where('uid', $connectionUid)
+        return response()->json(['data' => ['flushed' => true]]);
+    }
+
+    private function find(Request $request, string $uid): RelovaConnection
+    {
+        return RelovaConnection::query()
+            ->where('tenant_id', (string) $request->attributes->get('relova_tenant_id'))
+            ->where('uid', $uid)
             ->firstOrFail();
+    }
 
-        $this->connectionManager->flushCache($connection);
-
+    private function errorResponse(\Throwable $e): JsonResponse
+    {
         return response()->json([
-            'message' => 'Schema cache flushed successfully',
-        ]);
+            'error' => class_basename($e),
+            'message' => $e->getMessage(),
+        ], 502);
     }
 }

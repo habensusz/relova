@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Relova\Models;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -87,9 +88,9 @@ class CustomFieldDefinition extends Model
     /**
      * Get active definitions for an entity type, cached until busted.
      *
-     * @return \Illuminate\Database\Eloquent\Collection<int, static>
+     * @return Collection<int, static>
      */
-    public static function cachedForEntity(string $entityType): \Illuminate\Database\Eloquent\Collection
+    public static function cachedForEntity(string $entityType): Collection
     {
         return Cache::rememberForever(
             RelovaCacheKeys::definitions($entityType),

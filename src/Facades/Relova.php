@@ -5,24 +5,32 @@ declare(strict_types=1);
 namespace Relova\Facades;
 
 use Illuminate\Support\Facades\Facade;
-use Relova\Services\RelovaConnectionManager;
+use Relova\Sdk\RelovaClient;
 
 /**
- * @method static \Relova\Contracts\ConnectorDriver connect(\Relova\Models\RelovaConnection $connection)
- * @method static bool test(\Relova\Models\RelovaConnection $connection)
- * @method static array getTables(\Relova\Models\RelovaConnection $connection)
- * @method static array getColumns(\Relova\Models\RelovaConnection $connection, string $table)
- * @method static array query(\Relova\Models\RelovaConnection $connection, string $sql, array $bindings = [])
- * @method static void flushCache(\Relova\Models\RelovaConnection $connection)
- * @method static array healthCheck(\Relova\Models\RelovaConnection $connection)
- * @method static array preview(\Relova\Models\RelovaConnection $connection, string $table, array $columns = [], int $limit = 100)
+ * @method static array getDrivers()
+ * @method static array listConnections()
+ * @method static array getConnection(string $uid)
+ * @method static array createConnection(array $data)
+ * @method static array updateConnection(string $uid, array $data)
+ * @method static bool deleteConnection(string $uid)
+ * @method static array testConnection(string $uid)
+ * @method static array getTables(string $connectionUid)
+ * @method static array getColumns(string $connectionUid, string $table)
+ * @method static array preview(string $connectionUid, string $table, int $limit = 25, array $columns = [])
+ * @method static array query(string $connectionUid, string $table, array $columns = ['*'], array $conditions = [], int $limit = 100, int $offset = 0)
+ * @method static array search(string $connectionUid, string $table, string $searchColumn, string $searchTerm, array $displayColumns = [], int $limit = 20)
+ * @method static \Generator browse(string $connectionUid, string $table, array $columns = ['*'], array $conditions = [], int $pageSize = 250)
+ * @method static array selectEntity(string $connectionUid, string $remoteTable, string $remotePkColumn, string $remotePkValue, array $displayFields = [])
+ * @method static array getDisplayData(string $connectionUid, string $referenceUid, array $displayFields = [])
+ * @method static array refreshReference(string $connectionUid, string $referenceUid)
  *
- * @see \Relova\Services\RelovaConnectionManager
+ * @see RelovaClient
  */
 class Relova extends Facade
 {
     protected static function getFacadeAccessor(): string
     {
-        return RelovaConnectionManager::class;
+        return RelovaClient::class;
     }
 }

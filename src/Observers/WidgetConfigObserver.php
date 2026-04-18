@@ -27,6 +27,10 @@ class WidgetConfigObserver
 
     private function bustCache(CustomFieldWidgetConfig $config): void
     {
-        Cache::forget(RelovaCacheKeys::widgetLayout($config->widget_key));
+        try {
+            Cache::forget(RelovaCacheKeys::widgetLayout($config->widget_key));
+        } catch (\BadMethodCallException) {
+            // Cache store does not support tagging — skip invalidation
+        }
     }
 }

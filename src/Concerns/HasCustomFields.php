@@ -4,7 +4,12 @@ declare(strict_types=1);
 
 namespace Relova\Concerns;
 
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Relova\Exceptions\CustomFieldValidationException;
 use Relova\Models\CustomFieldDefinition;
 use Relova\Models\CustomFieldValue;
 use Relova\Services\CustomFieldValidator;
@@ -55,7 +60,7 @@ trait HasCustomFields
      * table via updateOrCreate, then updates the JSONB snapshot column
      * if it exists on the table.
      *
-     * @throws \Relova\Exceptions\CustomFieldValidationException
+     * @throws CustomFieldValidationException
      */
     public function setCustomField(string $name, mixed $value): void
     {
@@ -107,9 +112,9 @@ trait HasCustomFields
      *
      * Reads values from JSONB snapshot if available, falls back to EAV.
      *
-     * @return \Illuminate\Support\Collection<int, array{definition: CustomFieldDefinition, value: mixed}>
+     * @return Collection<int, array{definition: CustomFieldDefinition, value: mixed}>
      */
-    public function getAllCustomFields(): \Illuminate\Support\Collection
+    public function getAllCustomFields(): Collection
     {
         $definitions = CustomFieldDefinition::cachedForEntity($this->getEntityType());
 
@@ -170,7 +175,7 @@ trait HasCustomFields
     /**
      * Relationship: custom field values for this entity instance (EAV rows).
      */
-    public function customFieldValues(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function customFieldValues(): HasMany
     {
         return $this->hasMany(CustomFieldValue::class, 'entity_id')
             ->where('entity_type', $this->getEntityType());
@@ -179,7 +184,7 @@ trait HasCustomFields
     /**
      * Resolve a field definition by name for this entity type.
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     private function resolveFieldDefinition(string $name): CustomFieldDefinition
     {
@@ -231,7 +236,7 @@ trait HasCustomFields
                 ->where($this->getKeyName(), $this->getKey())
                 ->update([
                     'custom_fields' => $this->getConnection()->raw(
-                        "custom_fields || ?::jsonb",
+                        'custom_fields || ?::jsonb',
                         [$jsonPatch],
                     ),
                 ]);
@@ -263,7 +268,7 @@ trait HasCustomFields
         $table = $this->getTable();
 
         if (! isset(self::$customFieldsColumnCache[$table])) {
-            self::$customFieldsColumnCache[$table] = \Illuminate\Support\Facades\Schema::hasColumn($table, 'custom_fields');
+            self::$customFieldsColumnCache[$table] = Schema::hasColumn($table, 'custom_fields');
         }
 
         return self::$customFieldsColumnCache[$table];

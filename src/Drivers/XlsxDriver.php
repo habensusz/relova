@@ -8,18 +8,13 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use Relova\Contracts\ConnectorDriver;
 use Relova\Exceptions\ConnectionException;
-use Relova\Exceptions\QueryException;
 use Relova\Exceptions\ReadOnlyViolationException;
 
 /**
- * Connector driver for Excel XLSX files via PhpSpreadsheet.
+ * Excel XLSX connector via PhpSpreadsheet.
  *
- * - File path stored in the connection's `host` column.
- * - Each worksheet in the workbook becomes a queryable "table".
- * - First row of every sheet is treated as the column header row.
- * - SSH tunnel and port/username/password fields are not applicable.
- *
- * Requires: phpoffice/phpspreadsheet (already present in the host application).
+ * Each worksheet becomes a queryable "table". The first row of every sheet
+ * is treated as the column header row. Rows are yielded one-by-one.
  */
 class XlsxDriver implements ConnectorDriver
 {
@@ -36,6 +31,13 @@ class XlsxDriver implements ConnectorDriver
     public function getDefaultPort(): int
     {
         return 0;
+    }
+
+    public function getConfigSchema(): array
+    {
+        return [
+            'path' => ['type' => 'string', 'label' => 'File Path', 'required' => true, 'default' => ''],
+        ];
     }
 
     public function testConnection(array $config): bool
@@ -83,11 +85,11 @@ class XlsxDriver implements ConnectorDriver
         return $columns;
     }
 
-    public function query(array $config, string $sql, array $bindings = []): array
+    public function query(array $config, string $sql, array $bindings = [], array $options = []): \Generator
     {
         $this->enforceReadOnly($sql);
 
-        $maxRows = (int) config('relova.max_rows_per_query', 10000);
+        $maxRows = (int) ($options['max_rows'] ?? config('relova.max_rows_per_query', 10000));
         [$selectCols, $limit, $tableName] = $this->parseSql($sql, $maxRows);
 
         $spreadsheet = $this->loadSpreadsheet($config);
@@ -97,62 +99,50 @@ class XlsxDriver implements ConnectorDriver
 
         $highestColumn = $sheet->getHighestDataColumn();
         $highestRow = $sheet->getHighestDataRow();
-
         if ($highestRow < 2) {
-            return [];
+            return;
         }
 
-        $all = $sheet->rangeToArray("A1:{$highestColumn}{$highestRow}", null, true, false);
-        $headers = array_map(fn ($v) => trim((string) ($v ?? '')), $all[0] ?? []);
+        $headerRow = $sheet->rangeToArray("A1:{$highestColumn}1", null, true, false)[0] ?? [];
+        $headers = array_map(fn ($v) => trim((string) ($v ?? '')), $headerRow);
 
-        $rows = [];
-        $count = 0;
+        $yielded = 0;
+        for ($r = 2; $r <= $highestRow && $yielded < $limit; $r++) {
+            $rowRange = "A{$r}:{$highestColumn}{$r}";
+            $rowData = $sheet->rangeToArray($rowRange, null, true, false)[0] ?? [];
 
-        for ($r = 1; $r < count($all) && $count < $limit; $r++) {
             $assoc = [];
             foreach ($headers as $hidx => $hname) {
-                $assoc[$hname] = $all[$r][$hidx] ?? null;
+                $assoc[$hname] = $rowData[$hidx] ?? null;
             }
 
             if ($selectCols === null) {
-                $rows[] = $assoc;
+                yield $assoc;
             } else {
                 $filtered = [];
                 foreach ($selectCols as $col) {
                     $filtered[$col] = $assoc[$col] ?? null;
                 }
-                $rows[] = $filtered;
+                yield $filtered;
             }
-
-            $count++;
+            $yielded++;
         }
-
-        return $rows;
     }
 
     public function buildPreviewQuery(string $table, array $columns = [], int $limit = 100): string
     {
         $cols = empty($columns) ? '*' : implode(', ', $columns);
 
-        return "SELECT {$cols} FROM {$table} LIMIT {$limit}";
+        return "SELECT {$cols} FROM \"{$table}\" LIMIT {$limit}";
     }
 
-    public function getConfigSchema(): array
+    private function loadSpreadsheet(array $config): Spreadsheet
     {
-        return [
-            'file_path' => ['type' => 'string', 'label' => 'File Path', 'required' => true, 'default' => ''],
-        ];
-    }
+        $path = $this->resolvePath($config);
 
-    // --- Helpers ---
-
-    protected function loadSpreadsheet(array $config): Spreadsheet
-    {
-        $path = $config['host'] ?? '';
-
-        if (! file_exists($path) || ! is_readable($path)) {
+        if (! is_readable($path)) {
             throw new ConnectionException(
-                message: "Cannot read Excel file: {$path}",
+                message: "Cannot read spreadsheet: {$path}",
                 driverName: 'xlsx',
                 host: $path,
             );
@@ -160,9 +150,9 @@ class XlsxDriver implements ConnectorDriver
 
         try {
             return IOFactory::load($path);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             throw new ConnectionException(
-                message: 'Failed to parse Excel file: '.$e->getMessage(),
+                message: 'Failed to load spreadsheet: '.$e->getMessage(),
                 driverName: 'xlsx',
                 host: $path,
                 previous: $e,
@@ -170,45 +160,47 @@ class XlsxDriver implements ConnectorDriver
         }
     }
 
-    protected function enforceReadOnly(string $sql): void
+    private function resolvePath(array $config): string
     {
-        $normalized = strtolower(trim($sql));
-        $writeKeywords = ['insert', 'update', 'delete', 'drop', 'truncate', 'alter', 'create', 'replace'];
+        return (string) ($config['path'] ?? $config['host'] ?? '');
+    }
 
-        foreach ($writeKeywords as $keyword) {
-            if (str_starts_with($normalized, $keyword)) {
-                throw new ReadOnlyViolationException(
-                    message: "Write operations are not permitted through Relova connectors: {$sql}",
-                    sql: $sql,
-                );
-            }
+    private function enforceReadOnly(string $sql): void
+    {
+        if (preg_match('/^\s*(INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|TRUNCATE|REPLACE)\b/i', $sql)) {
+            throw new ReadOnlyViolationException(
+                message: 'Write operations are not allowed through Relova connectors.',
+                sql: $sql,
+            );
         }
     }
 
     /**
-     * Parse a simple "SELECT cols FROM table LIMIT n" statement.
+     * Minimal SELECT parser — extracts column list, LIMIT, and FROM table name.
      *
-     * @return array{0: ?array<string>, 1: int, 2: ?string}
+     * @return array{0: ?array<int, string>, 1: int, 2: ?string}
      */
-    protected function parseSql(string $sql, int $defaultLimit): array
+    private function parseSql(string $sql, int $maxRows): array
     {
         $selectCols = null;
-        $limit = $defaultLimit;
-        $tableName = null;
-
-        if (preg_match('/\bLIMIT\s+(\d+)/i', $sql, $m)) {
-            $limit = min((int) $m[1], $defaultLimit);
+        if (preg_match('/^\s*SELECT\s+(.+?)\s+FROM\s+/i', $sql, $m)) {
+            $colPart = trim($m[1]);
+            if ($colPart !== '*') {
+                $selectCols = array_map(
+                    fn (string $c) => trim($c, " \t`\""),
+                    explode(',', $colPart),
+                );
+            }
         }
 
-        if (preg_match('/\bFROM\s+[`"]?(\w[\w\s]*)[`"]?(?:\s+LIMIT|\s*$)/i', $sql, $m)) {
+        $tableName = null;
+        if (preg_match('/\bFROM\s+["`]?([A-Za-z0-9_\s]+?)["`]?(?:\s+WHERE|\s+LIMIT|\s*$)/i', $sql, $m)) {
             $tableName = trim($m[1]);
         }
 
-        if (preg_match('/^\s*SELECT\s+(.*?)\s+FROM\b/is', $sql, $m)) {
-            $colsPart = trim($m[1]);
-            if ($colsPart !== '*') {
-                $selectCols = array_map('trim', explode(',', $colsPart));
-            }
+        $limit = $maxRows;
+        if (preg_match('/\bLIMIT\s+(\d+)/i', $sql, $m)) {
+            $limit = min((int) $m[1], $maxRows);
         }
 
         return [$selectCols, $limit, $tableName];

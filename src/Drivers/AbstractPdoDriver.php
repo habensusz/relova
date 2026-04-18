@@ -12,37 +12,30 @@ use Relova\Exceptions\QueryException;
 use Relova\Exceptions\ReadOnlyViolationException;
 
 /**
- * Base class for all PDO-based relational database drivers.
- * Provides shared connection logic, read-only enforcement, and query execution.
+ * Base class for PDO-based relational drivers.
+ *
+ * Guarantees:
+ *   - Queries are streamed via \Generator — no fetchAll on large result sets.
+ *   - Read-only is enforced at SQL parse time AND transaction level.
+ *   - Connect timeout is respected via PDO::ATTR_TIMEOUT.
+ *   - Query timeout is enforced per dialect where possible.
+ *   - The driver holds no state between calls.
  */
 abstract class AbstractPdoDriver implements ConnectorDriver
 {
-    /**
-     * Build the PDO DSN string from configuration.
-     */
     abstract protected function buildDsn(array $config): string;
 
-    /**
-     * Get platform-specific SQL to retrieve table list.
-     */
     abstract protected function getTablesQuery(array $config): string;
 
-    /**
-     * Get platform-specific SQL to retrieve column information.
-     */
     abstract protected function getColumnsQuery(string $table, array $config): string;
 
     /**
-     * Parse raw column metadata rows into normalized format.
-     *
      * @param  array<int, array<string, mixed>>  $rawColumns
      * @return array<int, array{name: string, type: string, nullable: bool, default: mixed, primary: bool, length: ?int}>
      */
     abstract protected function normalizeColumns(array $rawColumns): array;
 
     /**
-     * Parse raw table metadata rows into normalized format.
-     *
      * @param  array<int, array<string, mixed>>  $rawTables
      * @return array<int, array{name: string, schema: ?string, type: string, row_count: ?int}>
      */
@@ -51,11 +44,10 @@ abstract class AbstractPdoDriver implements ConnectorDriver
     public function testConnection(array $config): bool
     {
         try {
-            $pdo = $this->createPdo($config);
-            $pdo = null; // close immediately
+            $this->createPdo($config);
 
             return true;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             throw new ConnectionException(
                 message: 'Connection test failed: '.$e->getMessage(),
                 driverName: $this->getDriverName(),
@@ -68,30 +60,32 @@ abstract class AbstractPdoDriver implements ConnectorDriver
     public function getTables(array $config): array
     {
         $pdo = $this->createPdo($config);
-        $sql = $this->getTablesQuery($config);
-        $stmt = $pdo->query($sql);
-        $rawTables = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $stmt = $pdo->query($this->getTablesQuery($config));
+        $raw = $stmt === false ? [] : $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        return $this->normalizeTables($rawTables);
+        return $this->normalizeTables($raw);
     }
 
     public function getColumns(array $config, string $table): array
     {
         $pdo = $this->createPdo($config);
-        $sql = $this->getColumnsQuery($table, $config);
-        $stmt = $pdo->prepare($sql);
+        $stmt = $pdo->prepare($this->getColumnsQuery($table, $config));
         $stmt->execute();
-        $rawColumns = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $raw = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        return $this->normalizeColumns($rawColumns);
+        return $this->normalizeColumns($raw);
     }
 
-    public function query(array $config, string $sql, array $bindings = []): array
+    /**
+     * Stream rows from the remote source one at a time via \Generator.
+     */
+    public function query(array $config, string $sql, array $bindings = [], array $options = []): \Generator
     {
         $this->enforceReadOnly($sql);
 
         $pdo = $this->createPdo($config);
-        $timeout = (int) config('relova.query_timeout', 30);
+        $timeout = (int) ($options['timeout'] ?? $config['timeout'] ?? config('relova.query_timeout', 30));
+        $maxRows = (int) ($options['max_rows'] ?? config('relova.max_rows_per_query', 10000));
 
         try {
             $this->setQueryTimeout($pdo, $timeout);
@@ -99,19 +93,14 @@ abstract class AbstractPdoDriver implements ConnectorDriver
             $stmt = $pdo->prepare($sql);
             $stmt->execute($bindings);
 
-            $maxRows = (int) config('relova.max_rows_per_query', 10000);
-            $rows = [];
-            $count = 0;
-
-            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                $rows[] = $row;
-                $count++;
-                if ($count >= $maxRows) {
+            $yielded = 0;
+            while (($row = $stmt->fetch(PDO::FETCH_ASSOC)) !== false) {
+                yield $row;
+                $yielded++;
+                if ($yielded >= $maxRows) {
                     break;
                 }
             }
-
-            return $rows;
         } catch (PDOException $e) {
             throw new QueryException(
                 message: 'Query execution failed: '.$e->getMessage(),
@@ -145,35 +134,27 @@ abstract class AbstractPdoDriver implements ConnectorDriver
     }
 
     /**
-     * Return PDO constructor options for this driver.
-     * Override in subclasses to exclude attributes unsupported by a specific PDO driver.
-     *
      * @return array<int, mixed>
      */
     protected function getPdoConstructorOptions(int $connectTimeout): array
     {
         return [
-            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            PDO::ATTR_TIMEOUT            => $connectTimeout,
-            PDO::ATTR_EMULATE_PREPARES   => false,
+            PDO::ATTR_TIMEOUT => $connectTimeout,
+            PDO::ATTR_EMULATE_PREPARES => false,
         ];
     }
 
-    /**
-     * Create a PDO instance with read-only safety and timeout limits.
-     */
     protected function createPdo(array $config): PDO
     {
         $dsn = $this->buildDsn($config);
         $username = $config['username'] ?? null;
         $password = $config['password'] ?? null;
-        $connectTimeout = (int) config('relova.connection_timeout', 10);
-
-        $options = $this->getPdoConstructorOptions($connectTimeout);
+        $connectTimeout = (int) ($config['timeout'] ?? config('relova.connection_timeout', 10));
 
         try {
-            $pdo = new PDO($dsn, $username, $password, $options);
+            $pdo = new PDO($dsn, $username, $password, $this->getPdoConstructorOptions($connectTimeout));
             $this->setReadOnly($pdo);
 
             return $pdo;
@@ -187,48 +168,29 @@ abstract class AbstractPdoDriver implements ConnectorDriver
         }
     }
 
-    /**
-     * Enforce read-only mode on the connection.
-     * Override in subclasses for driver-specific behavior.
-     */
     protected function setReadOnly(PDO $pdo): void
     {
-        // Default: no-op. Subclasses implement per-platform read-only.
+        // Subclasses override with dialect-specific read-only enforcement.
     }
 
-    /**
-     * Set query timeout on the connection.
-     * Override in subclasses for driver-specific behavior.
-     */
     protected function setQueryTimeout(PDO $pdo, int $seconds): void
     {
-        // Default: no-op. Subclasses implement per-platform timeout.
+        // Subclasses override with dialect-specific timeout enforcement.
     }
 
     /**
-     * Enforce that a query is read-only (no INSERT, UPDATE, DELETE, DROP, etc.).
+     * Reject any SQL that attempts to mutate the remote source.
      */
     protected function enforceReadOnly(string $sql): void
     {
-        $normalized = strtoupper(trim(preg_replace('/\s+/', ' ', $sql)));
-
-        $writePatterns = [
-            '/^\s*(INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|TRUNCATE|REPLACE|MERGE|GRANT|REVOKE|EXEC|EXECUTE|CALL)\b/i',
-        ];
-
-        foreach ($writePatterns as $pattern) {
-            if (preg_match($pattern, $sql)) {
-                throw new ReadOnlyViolationException(
-                    message: 'Write operations are not allowed through Relova connectors',
-                    sql: $sql,
-                );
-            }
+        if (preg_match('/^\s*(INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|TRUNCATE|REPLACE|MERGE|GRANT|REVOKE|EXEC|EXECUTE|CALL)\b/i', $sql)) {
+            throw new ReadOnlyViolationException(
+                message: 'Write operations are not allowed through Relova connectors.',
+                sql: $sql,
+            );
         }
     }
 
-    /**
-     * Quote an identifier for safe use in SQL queries.
-     */
     protected function quoteIdentifier(string $identifier): string
     {
         return '"'.str_replace('"', '""', $identifier).'"';

@@ -11,48 +11,43 @@ return new class extends Migration
         $prefix = config('relova.table_prefix', 'relova_');
 
         Schema::create($prefix.'connections', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('uid', 22)->unique();
-            $table->string('tenant_id')->nullable()->index();
+            $table->string('tenant_id')->index();
 
             $table->string('name');
             $table->text('description')->nullable();
-            $table->boolean('enabled')->default(false);
 
-            // Driver & connection config
-            $table->string('driver_type', 50); // mysql, pgsql, sqlsrv, oracle, csv, etc.
+            // Driver identifier â€” 'mysql'|'pgsql'|'sqlsrv'|'oracle'|'sap_hana'|'csv'|'xlsx'|'rest_api'
+            $table->string('driver', 32);
             $table->string('host')->nullable();
-            $table->integer('port')->nullable();
-            $table->string('database_name')->nullable();
-            $table->string('schema_name')->nullable();
-            $table->string('username')->nullable();
-            $table->text('encrypted_password')->nullable();
-            $table->json('config_meta')->nullable(); // Extra driver-specific config
+            $table->unsignedSmallInteger('port')->nullable();
+            $table->string('database')->nullable();
 
-            // SSH Tunnel
+            // Encrypted per-tenant credential blob (JSON).
+            $table->text('credentials_encrypted');
+
+            // Driver-specific extras: schema, charset, API base URL, file path, etc.
+            $table->jsonb('options')->default('{}');
+
+            // SSH tunnel (optional, off by default).
             $table->boolean('ssh_enabled')->default(false);
             $table->string('ssh_host')->nullable();
-            $table->integer('ssh_port')->default(22);
-            $table->string('ssh_user')->nullable();
-            $table->string('ssh_auth_method', 20)->default('key');
-            $table->text('encrypted_ssh_password')->nullable();
-            $table->text('encrypted_ssh_private_key')->nullable();
-            $table->text('encrypted_ssh_passphrase')->nullable();
+            $table->unsignedSmallInteger('ssh_port')->default(22);
 
-            // Cache & behavior
-            $table->integer('cache_ttl')->default(300);
-            $table->enum('query_mode', ['virtual', 'snapshot', 'on_demand'])->default('virtual');
+            // Cache TTL override for schema metadata (seconds). Null = use config default.
+            $table->unsignedInteger('cache_ttl')->nullable();
 
-            // Health tracking
-            $table->enum('health_status', ['unknown', 'healthy', 'degraded', 'unhealthy'])->default('unknown');
-            $table->text('health_message')->nullable();
-            $table->timestamp('last_health_check_at')->nullable();
-            $table->timestamp('last_tested_at')->nullable();
+            // Runtime state.
+            $table->enum('status', ['active', 'error', 'unreachable'])->default('active');
+            $table->timestamp('last_checked_at')->nullable();
+            $table->text('last_error')->nullable();
 
             $table->timestamps();
+            $table->softDeletes();
 
-            $table->index(['tenant_id', 'enabled']);
-            $table->index(['driver_type']);
+            $table->index(['tenant_id', 'status']);
+            $table->index('driver');
         });
     }
 

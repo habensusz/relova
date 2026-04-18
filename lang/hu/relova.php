@@ -26,6 +26,9 @@ return [
     'status_disabled' => 'Letiltva',
     'status_unknown' => 'Ismeretlen',
     'last_checked' => 'Utoljára ellenőrizve',
+    'connection_host' => 'Kapcsolat / Host',
+    'fields_abbrev' => 'mez.',
+    'status' => 'Állapot',
     'add_connector_hint' => 'Csatlakoztasson új adatforrást',
     'delete_confirm' => 'Biztosan törölni szeretné ezt a kapcsolatot? Minden hozzárendelt leképezés és referencia eltávolításra kerül.',
 

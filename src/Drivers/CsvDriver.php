@@ -10,13 +10,14 @@ use Relova\Exceptions\QueryException;
 use Relova\Exceptions\ReadOnlyViolationException;
 
 /**
- * Connector driver for CSV (comma-separated values) files.
+ * CSV file connector.
  *
- * - File path is stored in the connection's `host` column.
- * - Optional delimiter stored in `config_meta.delimiter` (defaults to ",").
- * - Each CSV file = one "table" named after the filename without extension.
- * - First row is always treated as the header row.
- * - SSH tunnel and port fields are not applicable.
+ * File path is stored in the connection's host column (or options.path).
+ * Each CSV file = one "table" named after the filename without extension.
+ * First row is always the header row.
+ *
+ * Rows are yielded one-by-one via \Generator — the file is never
+ * loaded into memory as a whole array.
  */
 class CsvDriver implements ConnectorDriver
 {
@@ -35,11 +36,18 @@ class CsvDriver implements ConnectorDriver
         return 0;
     }
 
+    public function getConfigSchema(): array
+    {
+        return [
+            'path' => ['type' => 'string', 'label' => 'File Path', 'required' => true, 'default' => ''],
+            'delimiter' => ['type' => 'string', 'label' => 'Delimiter', 'required' => false, 'default' => ','],
+        ];
+    }
+
     public function testConnection(array $config): bool
     {
         $path = $this->resolvePath($config);
-
-        if (! file_exists($path) || ! is_readable($path)) {
+        if (! is_readable($path)) {
             throw new ConnectionException(
                 message: "Cannot read CSV file: {$path}",
                 driverName: 'csv',
@@ -53,10 +61,9 @@ class CsvDriver implements ConnectorDriver
     public function getTables(array $config): array
     {
         $path = $this->resolvePath($config);
-        $name = pathinfo($path, PATHINFO_FILENAME);
 
         return [[
-            'name' => $name,
+            'name' => pathinfo($path, PATHINFO_FILENAME),
             'schema' => null,
             'type' => 'table',
             'row_count' => null,
@@ -69,7 +76,6 @@ class CsvDriver implements ConnectorDriver
         $delimiter = $this->resolveDelimiter($config);
 
         $handle = fopen($path, 'r');
-
         if ($handle === false) {
             throw new ConnectionException(
                 message: "Cannot open CSV file: {$path}",
@@ -95,18 +101,17 @@ class CsvDriver implements ConnectorDriver
         ], $headers));
     }
 
-    public function query(array $config, string $sql, array $bindings = []): array
+    public function query(array $config, string $sql, array $bindings = [], array $options = []): \Generator
     {
         $this->enforceReadOnly($sql);
 
         $path = $this->resolvePath($config);
         $delimiter = $this->resolveDelimiter($config);
-        $maxRows = (int) config('relova.max_rows_per_query', 10000);
+        $maxRows = (int) ($options['max_rows'] ?? config('relova.max_rows_per_query', 10000));
 
         [$selectCols, $limit] = $this->parseSql($sql, $maxRows);
 
         $handle = fopen($path, 'r');
-
         if ($handle === false) {
             throw new QueryException(
                 message: "Cannot open CSV file: {$path}",
@@ -114,107 +119,84 @@ class CsvDriver implements ConnectorDriver
             );
         }
 
-        $headers = fgetcsv($handle, 0, $delimiter);
-
-        if (! is_array($headers)) {
-            fclose($handle);
-
-            return [];
-        }
-
-        $headers = array_map('trim', $headers);
-        $rows = [];
-        $count = 0;
-
-        while (($row = fgetcsv($handle, 0, $delimiter)) !== false && $count < $limit) {
-            $assoc = array_combine($headers, array_pad($row, count($headers), null));
-
-            if (! is_array($assoc)) {
-                continue;
+        try {
+            $headers = fgetcsv($handle, 0, $delimiter);
+            if (! is_array($headers)) {
+                return;
             }
+            $headers = array_map('trim', $headers);
 
-            if ($selectCols === null) {
-                $rows[] = $assoc;
-            } else {
-                $filtered = [];
-                foreach ($selectCols as $col) {
-                    $filtered[$col] = $assoc[$col] ?? null;
+            $yielded = 0;
+            while (($row = fgetcsv($handle, 0, $delimiter)) !== false && $yielded < $limit) {
+                $assoc = array_combine($headers, array_pad($row, count($headers), null));
+                if (! is_array($assoc)) {
+                    continue;
                 }
-                $rows[] = $filtered;
+
+                if ($selectCols === null) {
+                    yield $assoc;
+                } else {
+                    $filtered = [];
+                    foreach ($selectCols as $col) {
+                        $filtered[$col] = $assoc[$col] ?? null;
+                    }
+                    yield $filtered;
+                }
+                $yielded++;
             }
-
-            $count++;
+        } finally {
+            fclose($handle);
         }
-
-        fclose($handle);
-
-        return $rows;
     }
 
     public function buildPreviewQuery(string $table, array $columns = [], int $limit = 100): string
     {
         $cols = empty($columns) ? '*' : implode(', ', $columns);
 
-        return "SELECT {$cols} FROM {$table} LIMIT {$limit}";
+        return "SELECT {$cols} FROM \"{$table}\" LIMIT {$limit}";
     }
 
-    public function getConfigSchema(): array
+    private function resolvePath(array $config): string
     {
-        return [
-            'file_path' => ['type' => 'string', 'label' => 'File Path', 'required' => true, 'default' => ''],
-            'delimiter' => ['type' => 'string', 'label' => 'Delimiter', 'required' => false, 'default' => ','],
-        ];
+        return (string) ($config['path'] ?? $config['host'] ?? '');
     }
 
-    // --- Helpers ---
-
-    protected function resolvePath(array $config): string
+    private function resolveDelimiter(array $config): string
     {
-        return $config['host'] ?? '';
+        return (string) ($config['delimiter'] ?? $config['options']['delimiter'] ?? ',');
     }
 
-    protected function resolveDelimiter(array $config): string
+    private function enforceReadOnly(string $sql): void
     {
-        $meta = $config['config_meta'] ?? [];
-
-        return (string) ($meta['delimiter'] ?? ',');
-    }
-
-    protected function enforceReadOnly(string $sql): void
-    {
-        $normalized = strtolower(trim($sql));
-        $writeKeywords = ['insert', 'update', 'delete', 'drop', 'truncate', 'alter', 'create', 'replace'];
-
-        foreach ($writeKeywords as $keyword) {
-            if (str_starts_with($normalized, $keyword)) {
-                throw new ReadOnlyViolationException(
-                    message: "Write operations are not permitted through Relova connectors: {$sql}",
-                    sql: $sql,
-                );
-            }
+        if (preg_match('/^\s*(INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|TRUNCATE|REPLACE)\b/i', $sql)) {
+            throw new ReadOnlyViolationException(
+                message: 'Write operations are not allowed through Relova connectors.',
+                sql: $sql,
+            );
         }
     }
 
     /**
-     * Parse a simple "SELECT cols FROM table LIMIT n" statement.
-     * Returns [selectedColumns|null, limit] — null means SELECT *.
+     * Minimal SELECT parser — extracts column list and LIMIT.
      *
-     * @return array{0: ?array<string>, 1: int}
+     * @return array{0: ?array<int, string>, 1: int}
      */
-    protected function parseSql(string $sql, int $defaultLimit): array
+    private function parseSql(string $sql, int $maxRows): array
     {
         $selectCols = null;
-        $limit = $defaultLimit;
-
-        if (preg_match('/\bLIMIT\s+(\d+)/i', $sql, $m)) {
-            $limit = min((int) $m[1], $defaultLimit);
+        if (preg_match('/^\s*SELECT\s+(.+?)\s+FROM\s+/i', $sql, $m)) {
+            $colPart = trim($m[1]);
+            if ($colPart !== '*') {
+                $selectCols = array_map(
+                    fn (string $c) => trim($c, " \t`\""),
+                    explode(',', $colPart),
+                );
+            }
         }
 
-        if (preg_match('/^\s*SELECT\s+(.*?)\s+FROM\b/is', $sql, $m)) {
-            $colsPart = trim($m[1]);
-            if ($colsPart !== '*') {
-                $selectCols = array_map('trim', explode(',', $colsPart));
-            }
+        $limit = $maxRows;
+        if (preg_match('/\bLIMIT\s+(\d+)/i', $sql, $m)) {
+            $limit = min((int) $m[1], $maxRows);
         }
 
         return [$selectCols, $limit];

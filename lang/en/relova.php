@@ -26,6 +26,9 @@ return [
     'status_disabled' => 'Disabled',
     'status_unknown' => 'Unknown',
     'last_checked' => 'Last checked',
+    'connection_host' => 'Connection / Host',
+    'fields_abbrev' => 'flds',
+    'status' => 'Status',
     'add_connector_hint' => 'Connect a new data source',
     'delete_confirm' => 'Are you sure you want to delete this connection? All associated mappings and references will be removed.',
 

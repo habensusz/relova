@@ -38,8 +38,8 @@ class SapHanaDriver extends AbstractPdoDriver
 
     protected function buildDsn(array $config): string
     {
-        $host     = $config['host']     ?? 'localhost';
-        $port     = $config['port']     ?? $this->getDefaultPort();
+        $host = $config['host'] ?? 'localhost';
+        $port = $config['port'] ?? $this->getDefaultPort();
         $database = $config['database'] ?? '';
 
         // HDBODBC ODBC DSN — SERVERNODE accepts host:port
@@ -56,11 +56,11 @@ class SapHanaDriver extends AbstractPdoDriver
     {
         return array_merge(parent::getConfigSchema(), [
             'schema' => [
-                'type'     => 'string',
-                'label'    => 'Schema',
+                'type' => 'string',
+                'label' => 'Schema',
                 'required' => false,
-                'default'  => '',
-                'hint'     => 'HANA schema name (usually matches your user name in uppercase)',
+                'default' => '',
+                'hint' => 'HANA schema name (usually matches your user name in uppercase)',
             ],
         ]);
     }
@@ -87,9 +87,9 @@ class SapHanaDriver extends AbstractPdoDriver
     protected function getPdoConstructorOptions(int $connectTimeout): array
     {
         return [
-            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            PDO::ATTR_TIMEOUT            => $connectTimeout,
+            PDO::ATTR_TIMEOUT => $connectTimeout,
         ];
     }
 
@@ -138,7 +138,7 @@ class SapHanaDriver extends AbstractPdoDriver
     protected function getColumnsQuery(string $table, array $config): string
     {
         $schema = strtoupper($config['schema'] ?? $config['username'] ?? '');
-        $table  = strtoupper($table);
+        $table = strtoupper($table);
 
         return "SELECT
                     c.COLUMN_NAME,
@@ -160,9 +160,9 @@ class SapHanaDriver extends AbstractPdoDriver
             $row = array_change_key_case($row, CASE_LOWER);
 
             return [
-                'name'      => $row['table_name'],
-                'schema'    => $row['table_schema'] ?? null,
-                'type'      => strtolower($row['table_type'] ?? 'table') === 'view' ? 'view' : 'table',
+                'name' => $row['table_name'],
+                'schema' => $row['table_schema'] ?? null,
+                'type' => strtolower($row['table_type'] ?? 'table') === 'view' ? 'view' : 'table',
                 'row_count' => isset($row['row_count']) && $row['row_count'] !== null ? (int) $row['row_count'] : null,
             ];
         }, $rawTables);
@@ -174,12 +174,12 @@ class SapHanaDriver extends AbstractPdoDriver
             $row = array_change_key_case($row, CASE_LOWER);
 
             return [
-                'name'     => $row['column_name'],
-                'type'     => $row['data_type'],
+                'name' => $row['column_name'],
+                'type' => $row['data_type'],
                 'nullable' => strtoupper($row['is_nullable'] ?? 'FALSE') === 'TRUE',
-                'default'  => $row['column_default'] ?? null,
-                'primary'  => strtoupper($row['is_primary'] ?? 'NO') === 'YES',
-                'length'   => isset($row['max_length']) && $row['max_length'] !== null ? (int) $row['max_length'] : null,
+                'default' => $row['column_default'] ?? null,
+                'primary' => strtoupper($row['is_primary'] ?? 'NO') === 'YES',
+                'length' => isset($row['max_length']) && $row['max_length'] !== null ? (int) $row['max_length'] : null,
             ];
         }, $rawColumns);
     }

@@ -5,34 +5,29 @@ declare(strict_types=1);
 namespace Relova\Services;
 
 /**
- * Central registry for all custom-field cache keys.
- *
- * Provides consistent cache key generation and a single place
- * to enumerate all keys that need busting when definitions change.
+ * Cache key builder for Relova's metadata caches (custom fields, widget
+ * configs, form field layouts). Only metadata is cached — row data from
+ * remote sources is never persisted here.
  */
 class RelovaCacheKeys
 {
-    /**
-     * Cache key for all active definitions of a given entity type.
-     */
     public static function definitions(string $entityType): string
     {
-        return "relova:cf:defs:{$entityType}";
+        return "relova:cf_defs:{$entityType}";
     }
 
-    /**
-     * Cache key for merged form fields (schema + custom) of a given entity type.
-     */
     public static function formFields(string $entityType): string
     {
-        return "relova:cf:form:{$entityType}";
+        return "relova:form_fields:{$entityType}";
+    }
+
+    public static function widgetLayout(string $widgetKey): string
+    {
+        return "relova:widget_layout:{$widgetKey}";
     }
 
     /**
-     * Return all cache keys that should be invalidated when a definition
-     * for the given entity type is created, updated, or deleted.
-     *
-     * @return string[]
+     * @return array<int, string>
      */
     public static function keysForEntity(string $entityType): array
     {
@@ -40,13 +35,5 @@ class RelovaCacheKeys
             self::definitions($entityType),
             self::formFields($entityType),
         ];
-    }
-
-    /**
-     * Cache key for a widget's field layout.
-     */
-    public static function widgetLayout(string $widgetKey): string
-    {
-        return "relova:wl:{$widgetKey}";
     }
 }

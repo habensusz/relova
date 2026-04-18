@@ -4,18 +4,31 @@ declare(strict_types=1);
 
 namespace Relova\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\Crypt;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Str;
+use Relova\Security\CredentialEncryptor;
 
 /**
- * Represents a connection to a remote data source.
- * Stores configuration only — host, port, driver type, credentials.
- * Credentials are encrypted at rest.
+ * A configured remote data source for a tenant.
+ *
+ * Stores:
+ *   - Where the remote lives (driver, host, port, database).
+ *   - Tenant-encrypted credentials and optional SSH tunnel info.
+ *   - Driver-specific options.
+ *   - Runtime health (status, last error, last health check).
+ *
+ * Never stores any remote row data.
  */
 class RelovaConnection extends Model
 {
+    use HasUuids;
+    use SoftDeletes;
+
     protected $guarded = ['id'];
 
     public function getTable(): string
@@ -26,27 +39,19 @@ class RelovaConnection extends Model
     protected function casts(): array
     {
         return [
-            'enabled' => 'boolean',
-            'ssh_enabled' => 'boolean',
             'port' => 'integer',
             'ssh_port' => 'integer',
-            'config_meta' => 'array',
+            'ssh_enabled' => 'boolean',
             'cache_ttl' => 'integer',
-            'last_health_check_at' => 'datetime',
-            'last_tested_at' => 'datetime',
+            'options' => 'array',
+            'last_checked_at' => 'datetime',
         ];
     }
 
     protected $hidden = [
-        'encrypted_password',
-        'encrypted_ssh_password',
-        'encrypted_ssh_private_key',
-        'encrypted_ssh_passphrase',
+        'credentials_encrypted',
     ];
 
-    /**
-     * Boot: auto-generate uid on creation.
-     */
     protected static function booted(): void
     {
         static::creating(function (self $model) {
@@ -61,155 +66,61 @@ class RelovaConnection extends Model
         return 'uid';
     }
 
-    // --- Credential encryption ---
-
-    public function getPasswordAttribute(): ?string
+    public function virtualEntityReferences(): HasMany
     {
-        return $this->encrypted_password
-            ? Crypt::decryptString($this->encrypted_password)
-            : null;
+        return $this->hasMany(VirtualEntityReference::class, 'connection_id');
     }
 
-    public function setPasswordAttribute(?string $value): void
+    public function moduleMappings(): HasMany
     {
-        $this->attributes['encrypted_password'] = $value
-            ? Crypt::encryptString($value)
-            : null;
+        return $this->hasMany(ConnectorModuleMapping::class, 'connection_id');
     }
-
-    // --- SSH credential encryption ---
-
-    public function getSshPasswordAttribute(): ?string
-    {
-        return $this->encrypted_ssh_password
-            ? Crypt::decryptString($this->encrypted_ssh_password)
-            : null;
-    }
-
-    public function setSshPasswordAttribute(?string $value): void
-    {
-        $this->attributes['encrypted_ssh_password'] = $value
-            ? Crypt::encryptString($value)
-            : null;
-    }
-
-    public function getSshPrivateKeyAttribute(): ?string
-    {
-        return $this->encrypted_ssh_private_key
-            ? Crypt::decryptString($this->encrypted_ssh_private_key)
-            : null;
-    }
-
-    public function setSshPrivateKeyAttribute(?string $value): void
-    {
-        $this->attributes['encrypted_ssh_private_key'] = $value
-            ? Crypt::encryptString($value)
-            : null;
-    }
-
-    public function getSshPassphraseAttribute(): ?string
-    {
-        return $this->encrypted_ssh_passphrase
-            ? Crypt::decryptString($this->encrypted_ssh_passphrase)
-            : null;
-    }
-
-    public function setSshPassphraseAttribute(?string $value): void
-    {
-        $this->attributes['encrypted_ssh_passphrase'] = $value
-            ? Crypt::encryptString($value)
-            : null;
-    }
-
-    // --- Relationships ---
-
-    public function entityReferences(): HasMany
-    {
-        return $this->hasMany(RelovaEntityReference::class, 'connection_id');
-    }
-
-    public function fieldMappings(): HasMany
-    {
-        return $this->hasMany(RelovaFieldMapping::class, 'connection_id');
-    }
-
-    public function apiKeys(): HasMany
-    {
-        return $this->hasMany(RelovaApiKey::class, 'connection_id');
-    }
-
-    // --- Helper methods ---
 
     /**
-     * Get the full configuration array needed by the driver.
+     * Decrypt and return the credential payload.
      *
      * @return array<string, mixed>
      */
-    public function toDriverConfig(): array
+    public function credentials(): array
     {
-        return array_filter([
-            'host' => $this->host,
-            'port' => $this->port,
-            'database' => $this->database_name,
-            'schema' => $this->schema_name,
-            'username' => $this->username,
-            'password' => $this->password,
-        ], fn ($v) => ! is_null($v));
+        if (empty($this->credentials_encrypted)) {
+            return [];
+        }
+
+        return App::make(CredentialEncryptor::class)->decrypt(
+            $this->credentials_encrypted,
+            (string) $this->tenant_id,
+        );
     }
 
     /**
-     * Get the SSH configuration array used by SshTunnelService::establish().
+     * Encrypt and store a credential payload.
      *
-     * @return array<string, mixed>
+     * @param  array<string, mixed>  $credentials
      */
-    public function toSshConfig(): array
+    public function setCredentials(array $credentials): void
     {
-        return [
-            'host' => $this->ssh_host ?: ($this->host ?? '127.0.0.1'),
-            'port' => $this->ssh_port ?? 22,
-            'user' => $this->ssh_user ?? 'forge',
-            'auth_method' => $this->ssh_auth_method ?? 'key',
-            'password' => $this->ssh_password,
-            'private_key' => $this->ssh_private_key,
-            'passphrase' => $this->ssh_passphrase,
-        ];
+        $this->credentials_encrypted = App::make(CredentialEncryptor::class)->encrypt(
+            $credentials,
+            (string) $this->tenant_id,
+        );
     }
 
     /**
-     * Check if this connection's health status is healthy.
+     * Pretty driver label via mutator-style accessor.
      */
-    public function isHealthy(): bool
+    protected function driverLabel(): Attribute
     {
-        return $this->health_status === 'healthy';
-    }
-
-    /**
-     * Check if this connection is degraded or unhealthy.
-     */
-    public function isDegraded(): bool
-    {
-        return in_array($this->health_status, ['degraded', 'unhealthy']);
-    }
-
-    // --- Scopes ---
-
-    public function scopeEnabled($query)
-    {
-        return $query->where('enabled', true);
-    }
-
-    public function scopeHealthy($query)
-    {
-        return $query->where('health_status', 'healthy');
-    }
-
-    public function scopeByDriver($query, string $driver)
-    {
-        return $query->where('driver_type', $driver);
-    }
-
-    public function scopeForTenant($query, ?string $tenantId)
-    {
-        return $query->where('tenant_id', $tenantId);
+        return Attribute::get(fn () => match ($this->driver) {
+            'mysql' => 'MySQL / MariaDB',
+            'pgsql' => 'PostgreSQL',
+            'sqlsrv' => 'SQL Server',
+            'oracle' => 'Oracle',
+            'sap_hana' => 'SAP HANA',
+            'csv' => 'CSV File',
+            'xlsx' => 'Excel (XLSX)',
+            'rest_api' => 'REST API',
+            default => ucfirst((string) $this->driver),
+        });
     }
 }

@@ -4,163 +4,159 @@ declare(strict_types=1);
 
 namespace Relova;
 
-use Illuminate\Support\Facades\Blade;
+use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Support\ServiceProvider;
-use Relova\Console\Commands\AddColumnsCommand;
+use Livewire\Livewire;
+use Relova\Cache\SchemaCache;
 use Relova\Console\Commands\AddCustomFieldsCommand;
-use Relova\Contracts\ConnectionManager;
-use Relova\Http\Middleware\RelovaEnrichmentMiddleware;
+use Relova\Http\Middleware\RelovaApiAuth;
+use Relova\Livewire\CustomFieldManager;
+use Relova\Livewire\WidgetConfigEditor;
 use Relova\Models\CustomFieldDefinition;
 use Relova\Models\CustomFieldWidgetConfig;
 use Relova\Models\CustomFieldWidgetItem;
-use Relova\Models\RelovaConnection;
-use Relova\Models\RelovaFieldMapping;
 use Relova\Observers\CustomFieldDefinitionObserver;
-use Relova\Observers\RelovaConnectionObserver;
-use Relova\Observers\RelovaFieldMappingObserver;
 use Relova\Observers\WidgetConfigObserver;
 use Relova\Observers\WidgetItemObserver;
-use Relova\Services\ColumnProvisionerService;
+use Relova\Sdk\RelovaClient;
+use Relova\Security\CredentialEncryptor;
+use Relova\Security\SsrfGuard;
+use Relova\Services\ConnectionRegistry;
 use Relova\Services\CustomFieldValidator;
 use Relova\Services\DriverRegistry;
-use Relova\Services\EntityReferenceService;
 use Relova\Services\FormFieldMerger;
-use Relova\Services\HostSchemaService;
-use Relova\Services\MappingDataLoader;
-use Relova\Services\RelovaConnectionManager;
-use Relova\Services\RelovaEnrichmentService;
-use Relova\Services\SecurityService;
+use Relova\Services\QueryExecutor;
+use Relova\Services\ReferenceResolver;
+use Relova\Services\SchemaInspector;
+use Relova\Services\SnapshotManager;
 use Relova\Services\SshTunnelService;
-use Relova\Services\VirtualRelationLoader;
 
+/**
+ * Relova service provider.
+ *
+ * Wires the virtual-first federation stack:
+ *   - SSRF guard + credential encryption on every outbound call.
+ *   - Redis schema cache (metadata only â€” never row data).
+ *   - Driver registry + connection registry + query executor.
+ *   - Virtual entity reference resolver + snapshot manager (graceful degradation).
+ */
 class RelovaServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/relova.php', 'relova');
 
-        // Bind core services
-        $this->app->singleton(SecurityService::class);
+        // Security primitives
+        $this->app->singleton(SsrfGuard::class, function ($app) {
+            return new SsrfGuard(
+                enabled: (bool) config('relova.ssrf_protection', true),
+                blockedRanges: (array) config('relova.blocked_ip_ranges', []),
+                allowedHosts: (array) config('relova.ssrf_allowed_hosts', []),
+            );
+        });
 
+        $this->app->singleton(CredentialEncryptor::class, function ($app) {
+            $masterKey = (string) (config('relova.encryption_key') ?: config('app.key'));
+
+            return new CredentialEncryptor($masterKey);
+        });
+
+        // Metadata cache
+        $this->app->singleton(SchemaCache::class, function ($app) {
+            return new SchemaCache(
+                cache: $app->make(CacheRepository::class),
+                defaultTtlSeconds: (int) config('relova.schema_cache_ttl', 1800),
+            );
+        });
+
+        // Driver + connection registries
+        $this->app->singleton(DriverRegistry::class);
         $this->app->singleton(SshTunnelService::class);
 
-        $this->app->singleton(DriverRegistry::class);
+        $this->app->singleton(ConnectionRegistry::class, function ($app) {
+            return new ConnectionRegistry(
+                $app->make(CredentialEncryptor::class),
+                $app->make(SsrfGuard::class),
+            );
+        });
 
-        $this->app->singleton(HostSchemaService::class);
+        // Core services
+        $this->app->singleton(SchemaInspector::class, function ($app) {
+            return new SchemaInspector(
+                $app->make(DriverRegistry::class),
+                $app->make(ConnectionRegistry::class),
+                $app->make(SchemaCache::class),
+            );
+        });
 
-        $this->app->singleton(ColumnProvisionerService::class);
+        $this->app->singleton(QueryExecutor::class, function ($app) {
+            return new QueryExecutor(
+                $app->make(DriverRegistry::class),
+                $app->make(ConnectionRegistry::class),
+            );
+        });
 
+        $this->app->singleton(ReferenceResolver::class, function ($app) {
+            return new ReferenceResolver($app->make(QueryExecutor::class));
+        });
+
+        $this->app->singleton(SnapshotManager::class, function ($app) {
+            return new SnapshotManager($app->make(QueryExecutor::class));
+        });
+
+        // Custom fields (orthogonal feature)
         $this->app->singleton(CustomFieldValidator::class);
-
         $this->app->singleton(FormFieldMerger::class);
 
-        $this->app->singleton(RelovaConnectionManager::class, function ($app) {
-            return new RelovaConnectionManager(
-                $app->make(DriverRegistry::class),
-                $app->make(SecurityService::class),
-                $app->make(SshTunnelService::class),
-            );
-        });
-
-        $this->app->alias(RelovaConnectionManager::class, ConnectionManager::class);
-
-        $this->app->singleton(EntityReferenceService::class, function ($app) {
-            return new EntityReferenceService(
-                $app->make(RelovaConnectionManager::class),
-            );
-        });
-
-        $this->app->singleton(MappingDataLoader::class, function ($app) {
-            return new MappingDataLoader(
-                $app->make(RelovaConnectionManager::class),
-            );
-        });
-
-        $this->app->singleton(VirtualRelationLoader::class, function ($app) {
-            return new VirtualRelationLoader(
-                $app->make(RelovaConnectionManager::class),
-            );
-        });
-
-        $this->app->singleton(RelovaEnrichmentService::class, function ($app) {
-            return new RelovaEnrichmentService(
-                $app->make(VirtualRelationLoader::class),
-            );
-        });
+        // SDK client (in-app consumers)
+        $this->app->bind(RelovaClient::class, fn () => RelovaClient::fromConfig());
     }
 
     public function boot(): void
     {
-        // Register the enrichment middleware alias so host apps can use
-        // Route::middleware(['relova.enrich']) or add it to a group by alias.
-        $this->app['router']->aliasMiddleware('relova.enrich', RelovaEnrichmentMiddleware::class);
+        // API auth middleware alias
+        $this->app['router']->aliasMiddleware('relova.auth', RelovaApiAuth::class);
 
-        // Register model observers
-        RelovaConnection::observe(RelovaConnectionObserver::class);
-        RelovaFieldMapping::observe(RelovaFieldMappingObserver::class);
+        // Custom field observers
         CustomFieldDefinition::observe(CustomFieldDefinitionObserver::class);
         CustomFieldWidgetConfig::observe(WidgetConfigObserver::class);
         CustomFieldWidgetItem::observe(WidgetItemObserver::class);
 
-        // Register Artisan commands
         if ($this->app->runningInConsole()) {
             $this->commands([
-                AddColumnsCommand::class,
                 AddCustomFieldsCommand::class,
             ]);
         }
 
-        // Publish config
+        // Publishables
         $this->publishes([
             __DIR__.'/../config/relova.php' => config_path('relova.php'),
         ], 'relova-config');
 
-        // Load migrations (picked up by `php artisan migrate` and by `MigrateDatabase`
-        // in stancl/tenancy when a new tenant is created).
+        // Migrations (applied by host app's migrate / tenants:migrate)
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
 
-        // Publish migrations to the host app's tenant migration directory so that
-        // `php artisan tenants:migrate` can apply them to existing tenant schemas.
-        // Run: php artisan vendor:publish --tag=relova-tenant-migrations
         $this->publishes([
             __DIR__.'/../database/migrations' => database_path('migrations/tenant'),
         ], 'relova-tenant-migrations');
 
-        // Load API routes
+        // API routes, views, translations
         $this->loadRoutesFrom(__DIR__.'/../routes/api.php');
-
-        // Load views under the 'relova' namespace
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'relova');
-
-        // Load translations (package ships with en/de/hu; host app lang files take priority via publishable)
         $this->loadTranslationsFrom(__DIR__.'/../lang', 'relova');
 
-        // Publish views (optional override)
         $this->publishes([
             __DIR__.'/../resources/views' => resource_path('views/vendor/relova'),
         ], 'relova-views');
 
-        // Publish lang files to host app lang directory
         $this->publishes([
             __DIR__.'/../lang' => lang_path(),
         ], 'relova-lang');
 
-        // Register Livewire components
-        if (class_exists(\Livewire\Livewire::class)) {
-            \Livewire\Livewire::component('relova-dashboard', \Relova\Livewire\Dashboard::class);
-            \Livewire\Livewire::component('relova-connection-manager', \Relova\Livewire\ConnectionManager::class);
-            \Livewire\Livewire::component('relova-field-mapping-editor', \Relova\Livewire\FieldMappingEditor::class);
-            \Livewire\Livewire::component('relova-schema-browser', \Relova\Livewire\SchemaBrowser::class);
-            \Livewire\Livewire::component('relova-asset-picker', \Relova\Livewire\AssetPicker::class);
-            \Livewire\Livewire::component('relova-remote-record', \Relova\Livewire\RemoteRecord::class);
-            \Livewire\Livewire::component('relova-custom-field-manager', \Relova\Livewire\CustomFieldManager::class);
-            \Livewire\Livewire::component('relova-widget-config-editor', \Relova\Livewire\WidgetConfigEditor::class);
+        // Livewire components (custom-field management UI)
+        if (class_exists(Livewire::class)) {
+            Livewire::component('relova-custom-field-manager', CustomFieldManager::class);
+            Livewire::component('relova-widget-config-editor', WidgetConfigEditor::class);
         }
-
-        // Blade directive: sets $isRemote = true when $record is a RelovaRow (remote UNION row).
-        // Usage in host Blade views: @relovaRow($record)
-        Blade::directive('relovaRow', function (string $expression): string {
-            return "<?php \$isRemote = {$expression} instanceof \\Relova\\Data\\RelovaRow; ?>";
-        });
     }
 }

@@ -34,8 +34,8 @@ class OracleDriver extends AbstractPdoDriver
 
     protected function buildDsn(array $config): string
     {
-        $host     = $config['host']     ?? 'localhost';
-        $port     = $config['port']     ?? $this->getDefaultPort();
+        $host = $config['host'] ?? 'localhost';
+        $port = $config['port'] ?? $this->getDefaultPort();
         $database = $config['database'] ?? '';
 
         // database = Service Name or SID
@@ -46,11 +46,11 @@ class OracleDriver extends AbstractPdoDriver
     {
         return array_merge(parent::getConfigSchema(), [
             'schema' => [
-                'type'     => 'string',
-                'label'    => 'Schema (Owner)',
+                'type' => 'string',
+                'label' => 'Schema (Owner)',
                 'required' => false,
-                'default'  => '',
-                'hint'     => 'Defaults to the connected username if left blank',
+                'default' => '',
+                'hint' => 'Defaults to the connected username if left blank',
             ],
         ]);
     }
@@ -77,7 +77,7 @@ class OracleDriver extends AbstractPdoDriver
     protected function getPdoConstructorOptions(int $connectTimeout): array
     {
         return [
-            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         ];
     }
@@ -140,9 +140,9 @@ class OracleDriver extends AbstractPdoDriver
             $row = array_change_key_case($row, CASE_LOWER);
 
             return [
-                'name'      => $row['table_name'],
-                'schema'    => $row['table_schema'] ?? null,
-                'type'      => strtolower($row['table_type'] ?? 'table') === 'view' ? 'view' : 'table',
+                'name' => $row['table_name'],
+                'schema' => $row['table_schema'] ?? null,
+                'type' => strtolower($row['table_type'] ?? 'table') === 'view' ? 'view' : 'table',
                 'row_count' => isset($row['row_count']) && $row['row_count'] !== null ? (int) $row['row_count'] : null,
             ];
         }, $rawTables);
@@ -154,12 +154,12 @@ class OracleDriver extends AbstractPdoDriver
             $row = array_change_key_case($row, CASE_LOWER);
 
             return [
-                'name'     => $row['column_name'],
-                'type'     => $row['data_type'],
+                'name' => $row['column_name'],
+                'type' => $row['data_type'],
                 'nullable' => strtoupper($row['is_nullable'] ?? 'NO') === 'YES',
-                'default'  => isset($row['column_default']) ? trim((string) $row['column_default']) : null,
-                'primary'  => strtoupper($row['is_primary'] ?? 'NO') === 'YES',
-                'length'   => isset($row['max_length']) && $row['max_length'] !== null ? (int) $row['max_length'] : null,
+                'default' => isset($row['column_default']) ? trim((string) $row['column_default']) : null,
+                'primary' => strtoupper($row['is_primary'] ?? 'NO') === 'YES',
+                'length' => isset($row['max_length']) && $row['max_length'] !== null ? (int) $row['max_length'] : null,
             ];
         }, $rawColumns);
     }

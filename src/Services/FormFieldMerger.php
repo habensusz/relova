@@ -35,7 +35,7 @@ class FormFieldMerger
      * continuing from the last schema column.
      *
      * @param  array<int, \stdClass>  $schemaColumns  Columns from SchemaQueryTrait
-     * @return array<int, \stdClass>  Merged columns + custom fields
+     * @return array<int, \stdClass> Merged columns + custom fields
      */
     public function merge(array $schemaColumns, string $entityType): array
     {

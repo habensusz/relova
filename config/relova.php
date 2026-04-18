@@ -1,5 +1,13 @@
 <?php
 
+use Relova\Drivers\CsvDriver;
+use Relova\Drivers\MySqlDriver;
+use Relova\Drivers\OracleDriver;
+use Relova\Drivers\PostgreSqlDriver;
+use Relova\Drivers\SapHanaDriver;
+use Relova\Drivers\SqlServerDriver;
+use Relova\Drivers\XlsxDriver;
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -114,13 +122,13 @@ return [
     |
     */
     'drivers' => [
-        'mysql'    => \Relova\Drivers\MySqlDriver::class,
-        'pgsql'    => \Relova\Drivers\PostgreSqlDriver::class,
-        'sqlsrv'   => \Relova\Drivers\SqlServerDriver::class,
-        'oracle'   => \Relova\Drivers\OracleDriver::class,
-        'sap_hana' => \Relova\Drivers\SapHanaDriver::class,
-        'csv'      => \Relova\Drivers\CsvDriver::class,
-        'xlsx'     => \Relova\Drivers\XlsxDriver::class,
+        'mysql' => MySqlDriver::class,
+        'pgsql' => PostgreSqlDriver::class,
+        'sqlsrv' => SqlServerDriver::class,
+        'oracle' => OracleDriver::class,
+        'sap_hana' => SapHanaDriver::class,
+        'csv' => CsvDriver::class,
+        'xlsx' => XlsxDriver::class,
         // Phase 4:
         // 'rest_api' => \Relova\Drivers\RestApiDriver::class,
         // 'odata' => \Relova\Drivers\ODataDriver::class,
@@ -174,45 +182,14 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Automatic Request Enrichment
+    | Snapshot freshness
     |--------------------------------------------------------------------------
     |
-    | When RelovaEnrichmentMiddleware is registered on a route group or the
-    | global web middleware stack, it will automatically enrich any Eloquent
-    | model instance that uses the HasRelovaData trait with data fetched from
-    | the configured remote source — transparently, on every request.
-    |
-    | enabled
-    |   Master switch. Set RELOVA_ENRICHMENT_ENABLED=false to disable entirely
-    |   (e.g. during testing or maintenance).
-    |
-    | excluded_routes
-    |   Array of route name patterns (supports wildcards via Str::is) that
-    |   should be skipped by the middleware. Useful for API routes, admin
-    |   routes, or any route where enrichment overhead is not wanted.
-    |   Example: ['api.*', 'relova.*', 'horizon.*']
-    |
-    | enrich_route_parameters
-    |   When true, models resolved via route model binding are enriched before
-    |   the controller is invoked. This covers show/edit/delete detail pages.
-    |
-    | enrich_view_data
-    |   When true, variables passed to Blade views (via view()->with() or
-    |   view()->share()) are also walked and enriched. Covers index pages
-    |   where controllers share a collection of records.
+    | Minutes after which a virtual entity reference's display snapshot is
+    | considered stale. Reading a stale snapshot triggers a live remote
+    | fetch (with graceful fallback to the stale snapshot if the remote
+    | source is unreachable).
     |
     */
-    'enrichment' => [
-        'enabled' => env('RELOVA_ENRICHMENT_ENABLED', true),
-        'excluded_routes' => [
-            'relova.*',       // internal Relova UI routes
-            'api.*',          // REST API routes (use the SDK directly)
-            'livewire.*',     // Livewire message handling
-            'debugbar.*',     // Laravel Debugbar
-            'telescope.*',    // Laravel Telescope
-            'horizon.*',      // Laravel Horizon
-        ],
-        'enrich_route_parameters' => env('RELOVA_ENRICH_ROUTE_PARAMS', true),
-        'enrich_view_data' => env('RELOVA_ENRICH_VIEW_DATA', true),
-    ],
+    'snapshot_fresh_minutes' => env('RELOVA_SNAPSHOT_FRESH_MINUTES', 30),
 ];

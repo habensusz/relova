@@ -8,56 +8,63 @@ use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 
 /**
- * Relova SDK Client — wraps the Relova REST API for developer convenience.
+ * Relova SDK — thin, versionless HTTP client for the Relova REST API.
  *
- * itenance uses this SDK internally. External customers building
- * their own solutions use the same SDK. The experience is identical.
+ * Host apps (including itenance) consume Relova exclusively through this
+ * client or by calling the REST API directly. No Eloquent relationship is
+ * ever shared across the boundary.
+ *
+ * Every method that returns row data does so by explicit request; nothing
+ * is implicitly fetched or cached.
  */
 class RelovaClient
 {
-    protected string $baseUrl;
-
-    protected string $apiKey;
-
-    protected int $timeout;
-
     public function __construct(
-        string $baseUrl,
-        string $apiKey,
-        int $timeout = 30,
+        protected string $baseUrl,
+        protected string $apiKey,
+        protected int $timeout = 30,
     ) {
         $this->baseUrl = rtrim($baseUrl, '/');
-        $this->apiKey = $apiKey;
-        $this->timeout = $timeout;
     }
 
     /**
-     * Create from config (for internal use within the same Laravel app).
+     * Build a client from the host app's config.
      */
     public static function fromConfig(): self
     {
         return new self(
-            baseUrl: config('relova.api.base_url', url(config('relova.api.prefix', 'api/relova/v1'))),
-            apiKey: config('relova.api.internal_key', ''),
+            baseUrl: (string) config('relova.api.base_url', url((string) config('relova.api.prefix', 'api/relova/v1'))),
+            apiKey: (string) config('relova.api.internal_key', ''),
             timeout: (int) config('relova.query_timeout', 30),
         );
     }
 
-    // --- Connections ---
+    // -------------------------------------------------------------------------
+    // Drivers
+    // -------------------------------------------------------------------------
+
+    public function getDrivers(): array
+    {
+        return $this->http()->get("{$this->baseUrl}/drivers")->json();
+    }
+
+    // -------------------------------------------------------------------------
+    // Connections
+    // -------------------------------------------------------------------------
 
     public function listConnections(): array
     {
         return $this->http()->get("{$this->baseUrl}/connections")->json();
     }
 
-    public function createConnection(array $data): array
-    {
-        return $this->http()->post("{$this->baseUrl}/connections", $data)->json();
-    }
-
     public function getConnection(string $uid): array
     {
         return $this->http()->get("{$this->baseUrl}/connections/{$uid}")->json();
+    }
+
+    public function createConnection(array $data): array
+    {
+        return $this->http()->post("{$this->baseUrl}/connections", $data)->json();
     }
 
     public function updateConnection(string $uid, array $data): array
@@ -80,7 +87,9 @@ class RelovaClient
         return $this->http()->get("{$this->baseUrl}/connections/{$uid}/health")->json();
     }
 
-    // --- Schema ---
+    // -------------------------------------------------------------------------
+    // Schema (metadata only)
+    // -------------------------------------------------------------------------
 
     public function getTables(string $connectionUid): array
     {
@@ -89,15 +98,18 @@ class RelovaClient
 
     public function getColumns(string $connectionUid, string $table): array
     {
-        return $this->http()->get("{$this->baseUrl}/connections/{$connectionUid}/tables/{$table}/columns")->json();
+        return $this->http()
+            ->get("{$this->baseUrl}/connections/{$connectionUid}/tables/{$table}/columns")
+            ->json();
     }
 
-    public function previewTable(string $connectionUid, string $table, int $limit = 50, array $columns = []): array
+    public function preview(string $connectionUid, string $table, int $limit = 25, array $columns = []): array
     {
-        return $this->http()->get("{$this->baseUrl}/connections/{$connectionUid}/tables/{$table}/preview", [
-            'limit' => $limit,
-            'columns' => $columns,
-        ])->json();
+        return $this->http()
+            ->get("{$this->baseUrl}/connections/{$connectionUid}/tables/{$table}/preview", [
+                'limit' => $limit,
+                'columns' => implode(',', $columns),
+            ])->json();
     }
 
     public function flushSchemaCache(string $connectionUid): array
@@ -105,69 +117,162 @@ class RelovaClient
         return $this->http()->post("{$this->baseUrl}/connections/{$connectionUid}/flush-cache")->json();
     }
 
-    // --- Queries ---
+    // -------------------------------------------------------------------------
+    // Pass-through queries (whitelisted parameters only)
+    // -------------------------------------------------------------------------
 
-    public function query(string $connectionUid, string $sql, array $bindings = []): array
-    {
-        return $this->http()->post("{$this->baseUrl}/connections/{$connectionUid}/query", [
-            'sql' => $sql,
-            'bindings' => $bindings,
-        ])->json();
+    /**
+     * Execute a read-only SELECT over whitelisted parameters.
+     *
+     * @param  array<int, string>  $columns
+     * @param  array<int, array{0: string, 1: string, 2: mixed}>  $conditions
+     */
+    public function query(
+        string $connectionUid,
+        string $table,
+        array $columns = ['*'],
+        array $conditions = [],
+        int $limit = 100,
+        int $offset = 0,
+    ): array {
+        return $this->http()
+            ->post("{$this->baseUrl}/connections/{$connectionUid}/query", [
+                'table' => $table,
+                'columns' => $columns,
+                'conditions' => $conditions,
+                'limit' => $limit,
+                'offset' => $offset,
+            ])->json();
     }
 
-    public function select(string $connectionUid, string $table, array $options = []): array
-    {
-        $payload = array_merge(['table' => $table], $options);
-
-        return $this->http()->post("{$this->baseUrl}/connections/{$connectionUid}/select", $payload)->json();
+    /**
+     * Typeahead-style LIKE search over a single column.
+     *
+     * @param  array<int, string>  $displayColumns
+     */
+    public function search(
+        string $connectionUid,
+        string $table,
+        string $searchColumn,
+        string $searchTerm,
+        array $displayColumns = [],
+        int $limit = 20,
+    ): array {
+        return $this->http()
+            ->post("{$this->baseUrl}/connections/{$connectionUid}/search", [
+                'table' => $table,
+                'search_column' => $searchColumn,
+                'search_term' => $searchTerm,
+                'display_columns' => $displayColumns,
+                'limit' => $limit,
+            ])->json();
     }
 
-    // --- Entity References ---
-
-    public function listReferences(string $connectionUid, int $perPage = 50): array
-    {
-        return $this->http()->get("{$this->baseUrl}/connections/{$connectionUid}/references", [
-            'per_page' => $perPage,
-        ])->json();
+    /**
+     * Stream results by paging through the pass-through query.
+     * Yields one row at a time without buffering the whole set.
+     *
+     * @param  array<int, string>  $columns
+     * @param  array<int, array{0: string, 1: string, 2: mixed}>  $conditions
+     * @return \Generator<int, array<string, mixed>>
+     */
+    public function browse(
+        string $connectionUid,
+        string $table,
+        array $columns = ['*'],
+        array $conditions = [],
+        int $pageSize = 250,
+    ): \Generator {
+        $offset = 0;
+        while (true) {
+            $response = $this->query($connectionUid, $table, $columns, $conditions, $pageSize, $offset);
+            $rows = $response['data'] ?? [];
+            if ($rows === []) {
+                break;
+            }
+            foreach ($rows as $row) {
+                yield $row;
+            }
+            if (count($rows) < $pageSize) {
+                break;
+            }
+            $offset += $pageSize;
+        }
     }
 
-    public function resolveReference(string $connectionUid, array $data): array
+    // -------------------------------------------------------------------------
+    // Virtual entity references
+    // -------------------------------------------------------------------------
+
+    public function listReferences(string $connectionUid, ?string $table = null, int $limit = 50): array
     {
-        return $this->http()->post("{$this->baseUrl}/connections/{$connectionUid}/references/resolve", $data)->json();
+        return $this->http()
+            ->get("{$this->baseUrl}/connections/{$connectionUid}/references", array_filter([
+                'table' => $table,
+                'limit' => $limit,
+            ]))->json();
     }
 
-    public function getReference(string $connectionUid, string $referenceUid): array
-    {
-        return $this->http()->get("{$this->baseUrl}/connections/{$connectionUid}/references/{$referenceUid}")->json();
+    /**
+     * Find-or-create the virtual reference for a specific remote row.
+     * Host apps persist the returned reference uid as their FK.
+     *
+     * @param  array<int, string>  $displayFields
+     */
+    public function selectEntity(
+        string $connectionUid,
+        string $remoteTable,
+        string $remotePkColumn,
+        string $remotePkValue,
+        array $displayFields = [],
+    ): array {
+        return $this->http()
+            ->post("{$this->baseUrl}/connections/{$connectionUid}/references/resolve", [
+                'remote_table' => $remoteTable,
+                'remote_pk_column' => $remotePkColumn,
+                'remote_pk_value' => $remotePkValue,
+                'display_fields' => $displayFields,
+            ])->json();
     }
 
-    public function refreshReferenceSnapshot(string $connectionUid, string $referenceUid, array $snapshotColumns = []): array
+    /**
+     * Resolve display data for an existing reference (fresh snapshot, live
+     * fetch if stale, stale snapshot if remote is unreachable).
+     *
+     * @param  array<int, string>  $displayFields
+     */
+    public function getDisplayData(string $connectionUid, string $referenceUid, array $displayFields = []): array
     {
-        return $this->http()->post("{$this->baseUrl}/connections/{$connectionUid}/references/{$referenceUid}/refresh", [
-            'snapshot_columns' => $snapshotColumns,
-        ])->json();
+        return $this->http()
+            ->get("{$this->baseUrl}/connections/{$connectionUid}/references/{$referenceUid}", [
+                'display_fields' => implode(',', $displayFields),
+            ])->json();
     }
 
-    public function searchRemoteEntities(string $connectionUid, array $data): array
+    public function refreshReference(string $connectionUid, string $referenceUid): array
     {
-        return $this->http()->post("{$this->baseUrl}/connections/{$connectionUid}/references/search", $data)->json();
+        return $this->http()
+            ->post("{$this->baseUrl}/connections/{$connectionUid}/references/{$referenceUid}/refresh")
+            ->json();
     }
 
-    // --- Field Mappings ---
+    // -------------------------------------------------------------------------
+    // Module mappings
+    // -------------------------------------------------------------------------
 
     public function listMappings(string $connectionUid): array
     {
         return $this->http()->get("{$this->baseUrl}/connections/{$connectionUid}/mappings")->json();
     }
 
-    public function createMapping(string $connectionUid, array $data): array
-    {
-        return $this->http()->post("{$this->baseUrl}/connections/{$connectionUid}/mappings", $data)->json();
-    }
-
     public function getMapping(string $connectionUid, string $mappingUid): array
     {
         return $this->http()->get("{$this->baseUrl}/connections/{$connectionUid}/mappings/{$mappingUid}")->json();
+    }
+
+    public function createMapping(string $connectionUid, array $data): array
+    {
+        return $this->http()->post("{$this->baseUrl}/connections/{$connectionUid}/mappings", $data)->json();
     }
 
     public function updateMapping(string $connectionUid, string $mappingUid, array $data): array
@@ -180,21 +285,9 @@ class RelovaClient
         return $this->http()->delete("{$this->baseUrl}/connections/{$connectionUid}/mappings/{$mappingUid}")->successful();
     }
 
-    public function previewMapping(string $connectionUid, string $mappingUid, int $limit = 10): array
-    {
-        return $this->http()->get("{$this->baseUrl}/connections/{$connectionUid}/mappings/{$mappingUid}/preview", [
-            'limit' => $limit,
-        ])->json();
-    }
-
-    // --- Drivers ---
-
-    public function getDrivers(): array
-    {
-        return $this->http()->get("{$this->baseUrl}/drivers")->json();
-    }
-
-    // --- HTTP Client ---
+    // -------------------------------------------------------------------------
+    // HTTP
+    // -------------------------------------------------------------------------
 
     protected function http(): PendingRequest
     {

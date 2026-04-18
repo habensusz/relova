@@ -7,6 +7,8 @@ namespace Relova\Observers;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use Relova\Models\CustomFieldDefinition;
 use Relova\Services\RelovaCacheKeys;
 
@@ -102,12 +104,12 @@ class CustomFieldDefinitionObserver
     {
         // Use PostgreSQL's - operator for JSONB key removal in batches
         DB::table($table)
-            ->whereRaw("custom_fields ? ?", [$fieldName])
+            ->whereRaw('custom_fields ? ?', [$fieldName])
             ->chunkById(500, function ($records) use ($table, $fieldName): void {
                 DB::table($table)
                     ->whereIn('id', $records->pluck('id'))
                     ->update([
-                        'custom_fields' => DB::raw("custom_fields - " . DB::connection()->getPdo()->quote($fieldName)),
+                        'custom_fields' => DB::raw('custom_fields - '.DB::connection()->getPdo()->quote($fieldName)),
                     ]);
             });
     }
@@ -139,14 +141,14 @@ class CustomFieldDefinitionObserver
      */
     private function resolveTableName(string $entityType): ?string
     {
-        $plural = \Illuminate\Support\Str::plural($entityType);
+        $plural = Str::plural($entityType);
 
-        if (\Illuminate\Support\Facades\Schema::hasTable($plural)) {
+        if (Schema::hasTable($plural)) {
             return $plural;
         }
 
         // Fallback: try the entity type as-is (already plural or custom table)
-        if (\Illuminate\Support\Facades\Schema::hasTable($entityType)) {
+        if (Schema::hasTable($entityType)) {
             return $entityType;
         }
 
@@ -155,6 +157,6 @@ class CustomFieldDefinitionObserver
 
     private function tableHasCustomFieldsColumn(string $table): bool
     {
-        return \Illuminate\Support\Facades\Schema::hasColumn($table, 'custom_fields');
+        return Schema::hasColumn($table, 'custom_fields');
     }
 }

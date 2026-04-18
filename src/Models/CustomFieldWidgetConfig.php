@@ -7,6 +7,7 @@ namespace Relova\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Cache;
 use Relova\Services\RelovaCacheKeys;
 
@@ -72,7 +73,7 @@ class CustomFieldWidgetConfig extends Model
             }
 
             return $config;
-        } catch (\Illuminate\Database\QueryException) {
+        } catch (QueryException) {
             // Table doesn't exist yet (migrations pending) — graceful fallback
             return null;
         }
@@ -108,9 +109,28 @@ class CustomFieldWidgetConfig extends Model
                     ])
                     ->all();
             });
-        } catch (\Illuminate\Database\QueryException) {
+        } catch (QueryException) {
             // Table doesn't exist yet (migrations pending) — fall back to defaults
             return null;
+        } catch (\BadMethodCallException) {
+            // Cache store does not support tagging (e.g. file driver with CacheTenancyBootstrapper)
+            // Query directly without cache
+            $config = static::where('widget_key', $widgetKey)
+                ->where('is_active', true)
+                ->first();
+
+            if (! $config) {
+                return null;
+            }
+
+            return $config->visibleItems()
+                ->get(['field_key', 'label_override', 'group_header'])
+                ->map(fn ($item) => [
+                    'field_key' => $item->field_key,
+                    'label_override' => $item->label_override,
+                    'group_header' => $item->group_header,
+                ])
+                ->all();
         }
     }
 }

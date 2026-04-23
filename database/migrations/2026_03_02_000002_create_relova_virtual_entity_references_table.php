@@ -15,9 +15,10 @@ return new class extends Migration
             $table->string('uid', 22)->unique();
             $table->string('tenant_id')->index();
 
-            // mapping_id is added by 2026_04_20_000001_add_mapping_id_*
-            // (deferred because relova_connector_module_mappings is created in
-            //  the next migration, _000003).
+            // mapping_id links back to the connector_module_mapping that produced
+            // this reference. FK is added after connector_module_mappings exists.
+            $table->uuid('mapping_id')->nullable();
+            $table->index('mapping_id');
 
             $table->uuid('connection_id');
             $table->foreign('connection_id')

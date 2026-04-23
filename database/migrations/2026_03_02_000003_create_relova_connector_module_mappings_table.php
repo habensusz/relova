@@ -71,10 +71,29 @@ return new class extends Migration
             $table->index(['tenant_id', 'module_key']);
             $table->index(['connection_id', 'module_key']);
         });
+
+        // Now that this table exists, add the FK on virtual_entity_references.mapping_id.
+        if (Schema::hasTable($prefix.'virtual_entity_references')) {
+            Schema::table($prefix.'virtual_entity_references', function (Blueprint $table) use ($prefix) {
+                $table->foreign('mapping_id')
+                    ->references('id')
+                    ->on($prefix.'connector_module_mappings')
+                    ->nullOnDelete();
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::dropIfExists(config('relova.table_prefix', 'relova_').'connector_module_mappings');
+        $prefix = config('relova.table_prefix', 'relova_');
+
+        // Drop the FK from virtual_entity_references before dropping this table.
+        if (Schema::hasTable($prefix.'virtual_entity_references')) {
+            Schema::table($prefix.'virtual_entity_references', function (Blueprint $table) use ($prefix) {
+                $table->dropForeign([$prefix.'virtual_entity_references_mapping_id_foreign']);
+            });
+        }
+
+        Schema::dropIfExists($prefix.'connector_module_mappings');
     }
 };

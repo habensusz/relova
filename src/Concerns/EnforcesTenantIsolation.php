@@ -7,8 +7,6 @@ namespace Relova\Concerns;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Scope;
-use Relova\Exceptions\TenantContextException;
-
 /**
  * Enforces tenant isolation on every query for a Relova model.
  *
@@ -17,8 +15,10 @@ use Relova\Exceptions\TenantContextException;
  * binding `relova.current_tenant`, set by the RelovaApiAuth middleware
  * (for SDK consumers) or the host app (for in-process consumers).
  *
- * If no tenant is bound, queries throw TenantContextException — there is
- * no "global" mode. This prevents accidental cross-tenant data leakage.
+ * If no tenant is bound the scope adds WHERE false, returning an empty
+ * collection. This is safe — no cross-tenant data can leak — and allows
+ * the Relova UI to render an empty state both on the central domain and
+ * before any tenants have been registered.
  */
 trait EnforcesTenantIsolation
 {
@@ -33,11 +33,12 @@ trait EnforcesTenantIsolation
                     : null;
 
                 if (empty($tenantId)) {
-                    throw new TenantContextException(
-                        'Relova model '.$model::class.' queried without a bound tenant context. '
-                        .'Resolve the tenant server-side and bind it via '
-                        ."app()->instance('relova.current_tenant', \$tenantId) before querying."
-                    );
+                    // No tenant context — return empty results unconditionally.
+                    // whereRaw('false') leaks nothing and lets the UI show an empty state
+                    // on the central domain and before any tenants are registered.
+                    $builder->whereRaw('false');
+
+                    return;
                 }
 
                 $builder->where($model->getTable().'.tenant_id', $tenantId);

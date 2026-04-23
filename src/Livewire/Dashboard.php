@@ -45,7 +45,14 @@ class Dashboard extends Component
 
     public function mount(): void
     {
-        $this->tenantId = (string) (function_exists('tenant') && tenant() ? tenant('id') : '');
+        // Prefer the Relova container binding (set by middleware on central domain)
+        // over stancl's tenant() helper (only available on tenant subdomains).
+        if (app()->bound('relova.current_tenant')) {
+            $this->tenantId = (string) app('relova.current_tenant');
+        } elseif (function_exists('tenant') && tenant()) {
+            $this->tenantId = (string) tenant('id');
+        }
+
         $this->loadStats();
     }
 

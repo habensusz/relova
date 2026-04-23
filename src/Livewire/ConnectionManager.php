@@ -52,6 +52,8 @@ class ConnectionManager extends Component
 
     public string $database = '';
 
+    public string $schema = '';
+
     public string $username = '';
 
     public string $password = '';
@@ -113,6 +115,8 @@ class ConnectionManager extends Component
         $opts = (array) ($connection->options ?? []);
         $this->sshUser = (string) ($opts['ssh_user'] ?? '');
         unset($opts['ssh_user']);
+        $this->schema = (string) ($opts['schema'] ?? '');
+        unset($opts['schema']);
         $this->options = $opts;
         $this->optionsJson = json_encode($opts, JSON_PRETTY_PRINT) ?: '{}';
         $this->sshEnabled = (bool) $connection->ssh_enabled;
@@ -139,6 +143,7 @@ class ConnectionManager extends Component
             'database' => 'nullable|string|max:255',
             'username' => 'nullable|string|max:255',
             'password' => 'nullable|string|max:1024',
+            'schema' => 'nullable|string|max:255',
             'optionsJson' => 'nullable|json',
             'cacheTtl' => 'nullable|integer|min:0',
             'sshEnabled' => 'boolean',
@@ -150,6 +155,11 @@ class ConnectionManager extends Component
         ]);
 
         $options = json_decode($this->optionsJson ?: '{}', true) ?: [];
+        if ($this->schema !== '') {
+            $options['schema'] = $this->schema;
+        } else {
+            unset($options['schema']);
+        }
         if ($this->sshEnabled && $this->sshUser !== '') {
             $options['ssh_user'] = $this->sshUser;
         } else {
@@ -257,6 +267,7 @@ class ConnectionManager extends Component
         $this->host = '';
         $this->port = null;
         $this->database = '';
+        $this->schema = '';
         $this->username = '';
         $this->password = '';
         $this->options = [];

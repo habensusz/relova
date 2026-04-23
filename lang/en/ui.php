@@ -58,6 +58,8 @@ return [
     'host' => 'Host',
     'port' => 'Port',
     'database' => 'Database',
+    'schema' => 'Schema',
+    'schema_hint' => 'Leave blank to use the driver default (PostgreSQL: public).',
     'username' => 'Username',
     'password' => 'Password',
     'driver_options_json' => 'Driver options (JSON)',

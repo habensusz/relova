@@ -53,6 +53,8 @@ return [
     'host' => 'Kiszolgáló',
     'port' => 'Port',
     'database' => 'Adatbázis',
+    'schema' => 'Séma',
+    'schema_hint' => 'Hagyja üresen az alapértelmezett séma használatához (PostgreSQL: public).',
     'username' => 'Felhasználónév',
     'password' => 'Jelszó',
     'driver_options_json' => 'Driver opciók (JSON)',

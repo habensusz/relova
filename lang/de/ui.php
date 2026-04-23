@@ -53,6 +53,8 @@ return [
     'host' => 'Host',
     'port' => 'Port',
     'database' => 'Datenbank',
+    'schema' => 'Schema',
+    'schema_hint' => 'Leer lassen, um den Standardwert des Treibers zu verwenden (PostgreSQL: public).',
     'username' => 'Benutzername',
     'password' => 'Passwort',
     'driver_options_json' => 'Treiber-Optionen (JSON)',

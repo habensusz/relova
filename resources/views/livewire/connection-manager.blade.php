@@ -91,6 +91,18 @@
                                         class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-xl text-sm text-zinc-900 dark:text-gray-100 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:focus:border-sky-400" />
                                 </div>
 
+                                {{-- Schema — only for drivers that support named schemas --}}
+                                @if(in_array($driver, ['pgsql', 'oracle', 'sap_hana', 'sqlsrv']))
+                                <div>
+                                    <label class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">{{ __('relova::ui.schema') }}</label>
+                                    <input wire:model="schema" type="text"
+                                        placeholder="{{ $driver === 'pgsql' ? 'public' : '' }}"
+                                        class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-xl text-sm text-zinc-900 dark:text-gray-100 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:focus:border-sky-400" />
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ __('relova::ui.schema_hint') }}</p>
+                                    @error('schema') <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ $message }}</p> @enderror
+                                </div>
+                                @endif
+
                                 {{-- Username + Password --}}
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>

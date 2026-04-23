@@ -32,6 +32,18 @@ class PostgreSqlDriver extends AbstractPdoDriver
         return "pgsql:host={$host};port={$port};dbname={$database}";
     }
 
+    protected function createPdo(array $config): PDO
+    {
+        $pdo = parent::createPdo($config);
+
+        $schema = trim((string) ($config['schema'] ?? ''));
+        if ($schema !== '') {
+            $pdo->exec('SET search_path TO "'.str_replace('"', '""', $schema).'"');
+        }
+
+        return $pdo;
+    }
+
     protected function setReadOnly(PDO $pdo): void
     {
         $pdo->exec('SET default_transaction_read_only = on');

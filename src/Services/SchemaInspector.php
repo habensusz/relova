@@ -30,11 +30,13 @@ class SchemaInspector
         $this->connections->assertHostAllowed($connection);
         $driver = $this->drivers->resolve($connection->driver);
 
-        return $this->cache->getTables(
-            $connection,
-            $driver,
-            fn (RelovaConnection $c) => $this->connections->buildConfig($c),
-        );
+        return $this->connections->withTunnel($connection, function (array $config) use ($connection, $driver) {
+            return $this->cache->getTables(
+                $connection,
+                $driver,
+                fn () => $config,
+            );
+        });
     }
 
     /**
@@ -45,12 +47,14 @@ class SchemaInspector
         $this->connections->assertHostAllowed($connection);
         $driver = $this->drivers->resolve($connection->driver);
 
-        return $this->cache->getColumns(
-            $connection,
-            $table,
-            $driver,
-            fn (RelovaConnection $c) => $this->connections->buildConfig($c),
-        );
+        return $this->connections->withTunnel($connection, function (array $config) use ($connection, $table, $driver) {
+            return $this->cache->getColumns(
+                $connection,
+                $table,
+                $driver,
+                fn () => $config,
+            );
+        });
     }
 
     public function invalidate(RelovaConnection $connection): void

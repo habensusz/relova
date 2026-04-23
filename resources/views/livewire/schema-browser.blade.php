@@ -1,226 +1,265 @@
-<div class="px-4 sm:px-6 lg:px-8 pt-4 pb-12 max-w-7xl mx-auto">
-@livewire('page-breadcrumb', ['items' => [
-    ['label' => __('relova.relova_connector'), 'url' => tenancy()->initialized ? tenant()->route('relova.dashboard') : route('relova.dashboard')],
-    ['label' => __('relova.schema_browser')],
-]])
-<div class="mt-4 relative bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-lg overflow-hidden">
-    {{-- Accent bar --}}
-    <div class="h-1 bg-gradient-to-r from-violet-500 via-purple-500 to-indigo-500"></div>
-    {{-- Header --}}
-    <div class="flex flex-row justify-between items-center p-5 border-b border-gray-100 dark:border-gray-700">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-violet-600 dark:text-violet-400">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 0 1-1.125-1.125M3.375 19.5h7.5c.621 0 1.125-.504 1.125-1.125m-9.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-7.5A1.125 1.125 0 0 1 12 18.375m9.75-12.75c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125m19.5 0v1.5c0 .621-.504 1.125-1.125 1.125M2.25 5.625v1.5c0 .621.504 1.125 1.125 1.125m0 0h17.25m-17.25 0h7.5c.621 0 1.125.504 1.125 1.125M3.375 8.25c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125m17.25-3.75h-7.5c-.621 0-1.125.504-1.125 1.125m8.625-1.125c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125M12 10.875v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 10.875c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125M10.875 12h-1.5m1.5 0c.621 0 1.125.504 1.125 1.125m-2.625 0h1.5M10.875 12c-.621 0-1.125.504-1.125 1.125m0 0v1.5c0 .621.504 1.125 1.125 1.125m-2.25 0c-.621 0-1.125.504-1.125 1.125M12 13.875c0-.621.504-1.125 1.125-1.125" />
-                </svg>
-            </div>
-            <div>
-                <h3 class="text-base font-semibold text-gray-900 dark:text-white uppercase tracking-wide">{{ __('relova::relova.schema_browser') }}</h3>
-                <p class="text-xs text-gray-500 dark:text-gray-400">{{ __('relova::relova.browse_remote_schemas') }}</p>
-            </div>
-        </div>
-        @if($connectionUid)
-            <button wire:click="refreshSchema" type="button"
-                class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-violet-700 dark:text-violet-300 bg-violet-100 dark:bg-violet-900/30 hover:bg-violet-200 dark:hover:bg-violet-900/50 rounded-xl transition-all duration-200">
-                <svg wire:loading.remove wire:target="refreshSchema" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182" />
-                </svg>
-                <svg wire:loading wire:target="refreshSchema" class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                {{ __('relova::relova.refresh') }}
-            </button>
-        @endif
-    </div>
+<div class="relative mx-auto container pb-12">
+    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <div class="py-3 text-gray-900 dark:text-gray-100">
+            <article class="container mx-auto" style="min-height: 100px;">
 
-    <div class="p-5">
-        {{-- Connection selector --}}
-        <div class="mb-5">
-            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('relova::relova.select_connection') }}</label>
-            <div class="relative flex items-center gap-3">
-                <select wire:model.live="connectionUid" wire:change="selectConnection($event.target.value)"
-                    class="w-full max-w-md px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 dark:focus:border-violet-400 transition-all duration-200">
-                    <option value="">{{ __('relova::relova.choose_connection') }}</option>
-                    @foreach($connections as $conn)
-                        <option value="{{ $conn['uid'] }}">
-                            {{ $conn['name'] }} ({{ $conn['driver_type'] }})
-                        </option>
-                    @endforeach
-                </select>
-                <div wire:loading wire:target="selectConnection,loadTables,refreshSchema" class="flex items-center gap-2 text-sm text-violet-600 dark:text-violet-400">
-                    <svg class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span>{{ __('relova::relova.loading') }}</span>
-                </div>
-            </div>
-        </div>
-
-        {{-- Error message --}}
-        @if($errorMessage)
-            <div class="mb-4 p-3 rounded-xl bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 text-sm">
-                {{ $errorMessage }}
-            </div>
-        @endif
-
-        @if($connectionUid)
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-                {{-- Tables panel --}}
-                <div class="lg:col-span-1 border border-gray-100 dark:border-gray-700 rounded-xl overflow-hidden">
-                    <div class="px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
-                        <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                            {{ __('relova::relova.tables') }} ({{ count($tables) }})
-                            <svg wire:loading wire:target="selectConnection,loadTables,refreshSchema" class="w-3.5 h-3.5 animate-spin text-violet-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                {{-- Header --}}
+                <div class="rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg overflow-hidden mb-6">
+                    <div class="h-1 bg-gradient-to-r from-sky-500 via-indigo-500 to-purple-500"></div>
+                    <div class="p-6 flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-100 to-indigo-200 dark:from-sky-900/50 dark:to-indigo-800/50 flex items-center justify-center shrink-0">
+                            <svg class="w-5 h-5 text-sky-600 dark:text-sky-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 5.625c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
                             </svg>
-                        </h4>
-                    </div>
-                    <div class="max-h-96 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-700">
-                        {{-- Loading skeleton --}}
-                        <div wire:loading wire:target="selectConnection,loadTables,refreshSchema" class="px-4 py-3 space-y-2">
-                            @for($i = 0; $i < 6; $i++)
-                                <div class="h-8 bg-gray-100 dark:bg-gray-700 rounded animate-pulse"></div>
-                            @endfor
                         </div>
-                        <div wire:loading.remove wire:target="selectConnection,loadTables,refreshSchema">
-                        @forelse($tables as $table)
-                            <button wire:click="selectTable('{{ $table['name'] }}')" wire:key="tbl-{{ $table['name'] }}"
-                                type="button"
-                                class="w-full text-left px-4 py-2.5 text-sm hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors duration-150 flex items-center justify-between {{ $selectedTable === $table['name'] ? 'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300 font-semibold' : 'text-gray-700 dark:text-gray-300' }}">
-                                <span class="flex items-center gap-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 shrink-0">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 0 1-1.125-1.125M3.375 19.5h7.5c.621 0 1.125-.504 1.125-1.125m-9.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-7.5A1.125 1.125 0 0 1 12 18.375m9.75-12.75c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125m19.5 0v1.5c0 .621-.504 1.125-1.125 1.125M2.25 5.625v1.5c0 .621.504 1.125 1.125 1.125m0 0h17.25" />
-                                    </svg>
-                                    {{ $table['name'] }}
-                                </span>
-                                @if(isset($table['row_count']))
-                                    <span class="text-xs text-gray-400 dark:text-gray-500 font-normal">{{ number_format($table['row_count']) }}</span>
-                                @endif
-                            </button>
-                        @empty
-                            <div class="px-4 py-6 text-center text-sm text-gray-400 dark:text-gray-500">{{ __('relova::relova.no_tables') }}</div>
-                        @endforelse
+                        <div>
+                            <h1 class="text-xl font-bold text-zinc-900 dark:text-white">{{ __('relova::ui.schema_browser') }}</h1>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{{ __('relova::ui.schema_browser_subtitle') }}</p>
                         </div>
                     </div>
                 </div>
 
-                {{-- Columns panel --}}
-                <div class="lg:col-span-2 border border-gray-100 dark:border-gray-700 rounded-xl overflow-hidden">
-                    @if($selectedTable)
-                        <div class="px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
-                            <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                <span class="text-violet-600 dark:text-violet-400">{{ $selectedTable }}</span>
-                                &mdash; {{ count($columns) }} {{ __('relova::relova.columns') }}
-                                <svg wire:loading wire:target="selectTable,loadColumns,loadPreview" class="inline w-3.5 h-3.5 animate-spin text-violet-500 ml-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                            </h4>
-                            <button wire:click="loadPreview" type="button"
-                                wire:loading.attr="disabled" wire:target="loadPreview"
-                                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-violet-700 dark:text-violet-300 bg-violet-100 dark:bg-violet-900/30 hover:bg-violet-200 dark:hover:bg-violet-900/50 rounded-lg transition-all duration-200 disabled:opacity-50">
-                                <svg wire:loading.remove wire:target="loadPreview" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                                </svg>
-                                <svg wire:loading wire:target="loadPreview" class="w-3.5 h-3.5 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                {{ __('relova::relova.preview_data') }}
-                            </button>
+                <div class="flex gap-4 items-start">
+
+                    {{-- Connections --}}
+                    <div class="w-52 shrink-0 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-lg overflow-hidden">
+                        <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                            {{ __('relova::ui.connections') }}
+                        </div>
+                        @if ($connections->isEmpty())
+                            <div class="p-4 text-xs text-gray-500 dark:text-gray-400 italic">{{ __('relova::ui.no_active_connections') }}</div>
+                        @else
+                            <ul class="flex flex-col">
+                                @foreach ($connections as $c)
+                                    <li wire:key="conn-{{ $c->uid }}" class="block border-b border-gray-100 dark:border-gray-700 last:border-b-0">
+                                        <button wire:click="selectConnection('{{ $c->uid }}')" type="button"
+                                            class="block w-full text-left px-4 py-3 transition-colors duration-150 {{ $connectionUid === $c->uid ? 'bg-sky-600 dark:bg-sky-700' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50' }}">
+                                            <div class="text-sm font-semibold {{ $connectionUid === $c->uid ? 'text-white' : 'text-zinc-900 dark:text-white' }} truncate">{{ $c->name }}</div>
+                                            <div class="text-[11px] uppercase mt-0.5 {{ $connectionUid === $c->uid ? 'text-sky-200' : 'text-gray-400 dark:text-gray-500' }}">{{ $c->driver }}</div>
+                                        </button>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @endif
+                    </div>
+
+                    {{-- Tables --}}
+                    <div class="w-64 shrink-0 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-lg overflow-hidden">
+                        <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between gap-2">
+                            <div class="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                                {{ __('relova::ui.tables') }}
+                                @if (! empty($tables))
+                                    <span class="ml-1 text-sky-600 dark:text-sky-400 normal-case">({{ count($tables) }})</span>
+                                @endif
+                            </div>
+                            @if ($connectionUid)
+                                <button wire:click="flushCache" type="button" title="{{ __('relova::ui.flush_cache') }}"
+                                    class="text-gray-400 dark:text-gray-500 hover:text-sky-600 dark:hover:text-sky-400 transition-colors">
+                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+                                    </svg>
+                                </button>
+                            @endif
                         </div>
 
-                        {{-- Column list --}}
-                        <div class="max-h-64 overflow-y-auto">
-                            <table class="w-full text-sm">
-                                <thead class="bg-gray-50/50 dark:bg-gray-700/30 sticky top-0">
-                                    <tr>
-                                        <th class="px-4 py-2 text-left font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase">{{ __('relova::relova.column_name') }}</th>
-                                        <th class="px-4 py-2 text-left font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase">{{ __('relova::relova.column_type') }}</th>
-                                        <th class="px-4 py-2 text-center font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase">{{ __('relova::relova.nullable') }}</th>
-                                        <th class="px-4 py-2 text-center font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase">{{ __('relova::relova.key') }}</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                                    @foreach($columns as $col)
-                                        <tr wire:key="col-{{ $col['name'] }}" class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
-                                            <td class="px-4 py-2 font-mono text-gray-900 dark:text-gray-100">{{ $col['name'] }}</td>
-                                            <td class="px-4 py-2 text-gray-500 dark:text-gray-400 font-mono text-xs">{{ $col['type'] ?? '' }}</td>
-                                            <td class="px-4 py-2 text-center">
-                                                @if($col['nullable'] ?? false)
-                                                    <span class="text-gray-400">{{ __('relova::relova.yes') }}</span>
-                                                @else
-                                                    <span class="text-gray-600 dark:text-gray-300 font-semibold">{{ __('relova::relova.no') }}</span>
-                                                @endif
-                                            </td>
-                                            <td class="px-4 py-2 text-center">
-                                                @if(($col['key'] ?? '') === 'PRI' || ($col['key'] ?? '') === 'PRIMARY KEY')
-                                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 text-xs font-semibold">PK</span>
-                                                @elseif($col['key'] ?? '')
-                                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300 text-xs">{{ $col['key'] }}</span>
-                                                @endif
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-
-                        {{-- Data preview --}}
-                        @if(count($previewRows) > 0)
-                            <div class="border-t border-gray-100 dark:border-gray-700">
-                                <div class="px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
-                                    <h5 class="text-xs font-semibold text-violet-700 dark:text-violet-300 uppercase">
-                                        {{ __('relova::relova.data_preview') }} ({{ count($previewRows) }} {{ __('relova::relova.rows') }})
-                                    </h5>
-                                </div>
-                                <div class="overflow-x-auto max-h-72">
-                                    <table class="w-full text-xs">
-                                        <thead class="bg-gray-50 dark:bg-gray-700/50 sticky top-0">
-                                            <tr>
-                                                @foreach(array_keys($previewRows[0] ?? []) as $colName)
-                                                    <th class="px-3 py-2 text-left font-semibold text-gray-600 dark:text-gray-400 whitespace-nowrap">{{ $colName }}</th>
-                                                @endforeach
-                                            </tr>
-                                        </thead>
-                                        <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                                            @foreach($previewRows as $i => $row)
-                                                <tr wire:key="prev-{{ $i }}" class="hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                                                    @foreach($row as $val)
-                                                        <td class="px-3 py-1.5 text-gray-700 dark:text-gray-300 whitespace-nowrap max-w-xs truncate">{{ $val }}</td>
-                                                    @endforeach
-                                                </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
-                                </div>
+                        @if (! empty($tables))
+                            <div class="px-3 py-2 border-b border-gray-100 dark:border-gray-700">
+                                <input wire:model.live.debounce.200ms="tableSearch" type="text"
+                                    placeholder="{{ __('relova::ui.filter_tables') }}"
+                                    class="block w-full text-xs px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-zinc-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-sky-500 focus:border-sky-500" />
                             </div>
                         @endif
-                    @else
-                        <div class="px-4 py-12 text-center text-sm text-gray-400 dark:text-gray-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 mx-auto mb-2 text-gray-300 dark:text-gray-600">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.042 21.672 13.684 16.6m0 0-2.51 2.225.569-9.47 5.227 7.917-3.286-.672Zm-7.518-.267A8.25 8.25 0 1 1 20.25 10.5M8.288 14.212A5.25 5.25 0 1 1 17.25 10.5" />
-                            </svg>
-                            {{ __('relova::relova.select_table_hint') }}
+
+                        <div wire:loading wire:target="selectConnection,flushCache" class="py-8 text-center">
+                            <div class="inline-block w-5 h-5 border-2 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
+                            <div class="text-xs text-gray-400 dark:text-gray-500 mt-2">{{ __('relova::ui.loading') }}&#8230;</div>
                         </div>
-                    @endif
+
+                        <div wire:loading.remove wire:target="selectConnection,flushCache" style="max-height:560px;overflow-y:auto;">
+                            @if (! $connectionUid)
+                                <div class="py-10 px-4 text-center text-xs text-gray-400 dark:text-gray-500">{{ __('relova::ui.pick_a_connection') }}</div>
+                            @elseif ($tablesError)
+                                <div class="p-4">
+                                    <div class="flex items-start gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50">
+                                        <svg class="w-4 h-4 text-red-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                                        </svg>
+                                        <span class="text-xs text-red-700 dark:text-red-400 break-all">{{ $tablesError }}</span>
+                                    </div>
+                                </div>
+                            @elseif (empty($filteredTables))
+                                <div class="py-8 text-center text-xs text-gray-400 dark:text-gray-500">
+                                    {{ $tableSearch ? __('relova::ui.no_tables_match') : __('relova::ui.no_tables') }}
+                                </div>
+                            @else
+                                <ul class="flex flex-col">
+                                    @foreach ($filteredTables as $table)
+                                        <li wire:key="tbl-{{ $table['name'] }}" class="block border-b border-gray-100 dark:border-gray-700 last:border-b-0">
+                                            <button wire:click="selectTable('{{ $table['name'] }}')" type="button"
+                                                class="block w-full text-left px-4 py-2.5 transition-colors duration-150 {{ $selectedTable === $table['name'] ? 'bg-sky-600 dark:bg-sky-700' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50' }}">
+                                                <div class="flex items-center justify-between gap-2">
+                                                    <span class="font-mono text-sm truncate {{ $selectedTable === $table['name'] ? 'text-white font-semibold' : 'text-zinc-700 dark:text-gray-300' }}">{{ $table['name'] }}</span>
+                                                    <span class="shrink-0 flex items-center gap-1">
+                                                        @if (isset($table['type']) && $table['type'] === 'view')
+                                                            <span class="{{ $selectedTable === $table['name'] ? 'bg-white/20 text-white' : 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' }} text-[10px] px-1.5 py-0.5 rounded font-medium">view</span>
+                                                        @endif
+                                                        @if (isset($table['row_count']) && $table['row_count'] !== null)
+                                                            <span class="text-[10px] {{ $selectedTable === $table['name'] ? 'text-sky-200' : 'text-gray-400 dark:text-gray-500' }}">~{{ number_format($table['row_count']) }}</span>
+                                                        @endif
+                                                    </span>
+                                                </div>
+                                            </button>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            @endif
+                        </div>
+                    </div>
+
+                    {{-- Detail panel --}}
+                    <div class="flex-1 min-w-0 space-y-4">
+                        <div wire:loading wire:target="selectTable" class="rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-lg p-10 text-center">
+                            <div class="inline-block w-6 h-6 border-2 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400 mt-3">{{ __('relova::ui.loading') }}&#8230;</div>
+                        </div>
+                        <div wire:loading.remove wire:target="selectTable">
+                            @if (! $selectedTable)
+                                <div class="rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700 p-16 text-center">
+                                    <svg class="w-12 h-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 0 1-1.125-1.125M3.375 19.5h7.5c.621 0 1.125-.504 1.125-1.125m-9.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-7.5A1.125 1.125 0 0 1 12 18.375m9.75-12.75c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125m19.5 0v1.5c0 .621-.504 1.125-1.125 1.125M2.25 5.625v1.5c0 .621.504 1.125 1.125 1.125m0 0h17.25m-17.25 0c0 .621.504 1.125 1.125 1.125h15" />
+                                    </svg>
+                                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ __('relova::ui.pick_a_table') }}</p>
+                                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">{{ __('relova::ui.pick_a_table_hint') }}</p>
+                                </div>
+                            @else
+
+                                {{-- Columns --}}
+                                <div class="rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-lg overflow-hidden">
+                                    <div class="px-5 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50 dark:bg-gray-700/60">
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-sm font-semibold text-zinc-800 dark:text-white">{{ __('relova::ui.columns') }}</span>
+                                            <code class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">{{ $selectedTable }}</code>
+                                        </div>
+                                        @if (! empty($columns))
+                                            <span class="text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 px-2 py-0.5 rounded-full font-medium">{{ count($columns) }} {{ __('relova::ui.cols') }}</span>
+                                        @endif
+                                    </div>
+                                    @if ($columnsError)
+                                        <div class="p-5">
+                                            <div class="flex items-start gap-3 p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50">
+                                                <svg class="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                                                </svg>
+                                                <div>
+                                                    <p class="text-sm font-semibold text-red-700 dark:text-red-400">{{ __('relova::ui.failed_to_load_columns') }}</p>
+                                                    <p class="text-xs text-red-600 dark:text-red-500 mt-1 break-all">{{ $columnsError }}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @elseif (empty($columns))
+                                        <div class="px-5 py-8 text-center text-xs text-gray-400 dark:text-gray-500">{{ __('relova::ui.no_columns') }}</div>
+                                    @else
+                                        <div class="overflow-x-auto" style="max-height:300px;overflow-y:auto;">
+                                            <table class="w-full text-sm">
+                                                <thead class="sticky top-0 bg-gray-50 dark:bg-gray-700/80 border-b border-gray-200 dark:border-gray-600">
+                                                    <tr>
+                                                        <th class="text-left px-5 py-2.5 text-[11px] uppercase tracking-wider font-semibold text-gray-500 dark:text-gray-400 w-1/3">{{ __('relova::ui.name') }}</th>
+                                                        <th class="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold text-gray-500 dark:text-gray-400">{{ __('relova::ui.type') }}</th>
+                                                        <th class="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold text-gray-500 dark:text-gray-400">{{ __('relova::ui.nullable') }}</th>
+                                                        <th class="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold text-gray-500 dark:text-gray-400">{{ __('relova::ui.default') }}</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach ($columns as $col)
+                                                        <tr class="border-b border-gray-100 dark:border-gray-700/60 last:border-b-0 odd:bg-white even:bg-gray-50/60 dark:odd:bg-gray-800 dark:even:bg-gray-700/30 hover:bg-sky-50 dark:hover:bg-gray-700/60 transition-colors">
+                                                            <td class="px-5 py-2.5">
+                                                                <div class="flex items-center gap-1.5">
+                                                                    @if ($col['primary'] ?? false)
+                                                                        <span title="Primary Key" class="shrink-0 inline-flex items-center justify-center w-4 h-4 rounded bg-amber-100 dark:bg-amber-900/40">
+                                                                            <svg class="w-2.5 h-2.5 text-amber-500 dark:text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8 7a5 5 0 1 1 3.61 4.804l-1.903 1.903A1 1 0 0 1 9 14H8v1a1 1 0 0 1-1 1H6v1a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-2a1 1 0 0 1 .293-.707L7.196 9.39A5.002 5.002 0 0 1 8 7Zm5-1a1 1 0 1 0 0 2 2 2 0 0 0 0-4Z" clip-rule="evenodd"/></svg>
+                                                                        </span>
+                                                                    @endif
+                                                                    <span class="font-mono text-xs text-zinc-800 dark:text-gray-200">{{ $col['name'] ?? '' }}</span>
+                                                                </div>
+                                                            </td>
+                                                            <td class="px-4 py-2.5 whitespace-nowrap">
+                                                                <code class="text-[11px] px-1.5 py-0.5 rounded bg-sky-100/80 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300 whitespace-nowrap">{{ $col['type'] ?? '' }}</code>
+                                                            </td>
+                                                            <td class="px-4 py-2.5 whitespace-nowrap">
+                                                                @if ($col['nullable'] ?? false)
+                                                                    <span class="text-[11px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">NULL</span>
+                                                                @else
+                                                                    <span class="text-[11px] px-1.5 py-0.5 rounded bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-300 font-medium border border-orange-100 dark:border-orange-800/40 whitespace-nowrap">NOT NULL</span>
+                                                                @endif
+                                                            </td>
+                                                            <td class="px-4 py-2.5 font-mono text-xs text-gray-400 dark:text-gray-500 truncate max-w-[160px]">
+                                                                {{ $col['default'] !== null ? (string) $col['default'] : '—' }}
+                                                            </td>
+                                                        </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    @endif
+                                </div>
+
+                                {{-- Preview --}}
+                                <div class="rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-lg overflow-hidden">
+                                    <div class="px-5 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50 dark:bg-gray-700/60">
+                                        <span class="text-sm font-semibold text-zinc-800 dark:text-white">{{ __('relova::ui.preview') }}</span>
+                                        <span class="text-xs text-gray-400 dark:text-gray-500">{{ __('relova::ui.first_n_rows', ['n' => 25]) }}</span>
+                                    </div>
+                                    @if ($previewError)
+                                        <div class="p-5">
+                                            <div class="flex items-start gap-3 p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50">
+                                                <svg class="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                                                </svg>
+                                                <div>
+                                                    <p class="text-sm font-semibold text-red-700 dark:text-red-400">{{ __('relova::ui.failed_to_load_preview') }}</p>
+                                                    <p class="text-xs text-red-600 dark:text-red-500 mt-1 break-all">{{ $previewError }}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @elseif (empty($previewRows))
+                                        <div class="px-5 py-8 text-center text-xs text-gray-400 dark:text-gray-500">{{ __('relova::ui.no_rows') }}</div>
+                                    @else
+                                        <div class="overflow-x-auto" style="max-height:400px;overflow-y:auto;">
+                                            <table class="w-full text-xs">
+                                                <thead class="sticky top-0 bg-gray-50 dark:bg-gray-700/80 border-b border-gray-200 dark:border-gray-600">
+                                                    <tr>
+                                                        @foreach (array_keys($previewRows[0]) as $h)
+                                                            <th class="text-left px-4 py-2.5 text-[11px] uppercase tracking-wider font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap">{{ $h }}</th>
+                                                        @endforeach
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach ($previewRows as $row)
+                                                        <tr class="border-b border-gray-100 dark:border-gray-700/60 last:border-b-0 odd:bg-white even:bg-gray-50/60 dark:odd:bg-gray-800 dark:even:bg-gray-700/30 hover:bg-sky-50 dark:hover:bg-gray-700/60 transition-colors">
+                                                            @foreach ($row as $val)
+                                                                <td class="px-4 py-2 font-mono text-zinc-700 dark:text-gray-300 whitespace-nowrap max-w-[200px] truncate"
+                                                                    title="{{ is_scalar($val) ? (string) $val : json_encode($val) }}">
+                                                                    @if ($val === null)
+                                                                        <span class="text-gray-300 dark:text-gray-600 italic">null</span>
+                                                                    @else
+                                                                        {{ is_scalar($val) ? (string) $val : json_encode($val) }}
+                                                                    @endif
+                                                                </td>
+                                                            @endforeach
+                                                        </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    @endif
+                                </div>
+
+                            @endif
+                        </div>
+                    </div>
+
                 </div>
-            </div>
-        @else
-            <div class="text-center py-12">
-                <div class="w-14 h-14 mx-auto mb-4 rounded-2xl flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-7 h-7 text-violet-500 dark:text-violet-300">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375" />
-                    </svg>
-                </div>
-                <p class="text-gray-500 dark:text-gray-400 mb-1">{{ __('relova::relova.no_connection_selected') }}</p>
-                <p class="text-sm text-gray-400 dark:text-gray-500">{{ __('relova::relova.select_connection_hint') }}</p>
-            </div>
-        @endif
+            </article>
+        </div>
     </div>
-</div>
 </div>

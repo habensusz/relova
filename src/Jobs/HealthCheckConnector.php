@@ -43,7 +43,10 @@ class HealthCheckConnector implements ShouldQueue
             $connections->assertHostAllowed($connection);
 
             $driver = $drivers->resolve($connection->driver);
-            $driver->testConnection($connections->buildConfig($connection));
+
+            $connections->withTunnel($connection, function (array $config) use ($driver) {
+                $driver->testConnection($config);
+            });
 
             $connections->markHealthy($connection);
         } catch (\Throwable $e) {

@@ -12,6 +12,7 @@ use Relova\Security\SsrfGuard;
  * Central authority for Relova connection configuration.
  *
  * - Builds the driver config array from a connection (decrypting credentials).
+ * - Manages SSH tunnel lifecycle via SshTunnelService when ssh_enabled is set.
  * - Exposes host validation via SsrfGuard before any remote call is attempted.
  * - Provides health-state update helpers.
  *
@@ -22,6 +23,7 @@ class ConnectionRegistry
     public function __construct(
         private CredentialEncryptor $encryptor,
         private SsrfGuard $ssrfGuard,
+        private SshTunnelService $sshTunnel,
     ) {}
 
     /**
@@ -60,6 +62,38 @@ class ConnectionRegistry
         }
 
         $this->ssrfGuard->validate($host);
+    }
+
+    /**
+     * Execute a callback with an SSH tunnel when the connection requires it.
+     *
+     * If ssh_enabled is false, the callback is invoked directly with the standard config.
+     * If ssh_enabled is true, an SSH tunnel is established first, the config is rewritten
+     * to point at 127.0.0.1:localPort, and the tunnel is torn down after the callback.
+     *
+     * @template T
+     *
+     * @param  callable(array<string, mixed>): T  $callback  Receives the driver config array
+     * @return T
+     */
+    public function withTunnel(RelovaConnection $connection, callable $callback): mixed
+    {
+        if (! $connection->ssh_enabled) {
+            return $callback($this->buildConfig($connection));
+        }
+
+        $session = $this->sshTunnel->establish($connection);
+
+        try {
+            $config = $this->buildConfig($connection);
+            // Redirect to the local tunnel port instead of the remote host
+            $config['host'] = '127.0.0.1';
+            $config['port'] = $session['localPort'];
+
+            return $callback($config);
+        } finally {
+            $this->sshTunnel->teardown($session);
+        }
     }
 
     /**

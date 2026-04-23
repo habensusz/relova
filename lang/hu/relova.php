@@ -174,6 +174,7 @@ return [
     'remote_value' => 'Érték',
     'unmapped' => 'Nem leképezett',
     'no_snapshot_data' => 'Nem áll rendelkezésre pillanatfelvétel-adat.',
+    'virtual_entity_notice' => 'Ez egy csatlakoztatott forrásból származó távoli rekord. A helyi funkciók nem érhetők el.',
     'back' => 'Vissza',
     'snapshot_notice' => 'Élő adatok egy távoli forrásból. A leképezett mezők frissítéskor szinkronizálódnak a helyi rekordokkal.',
 
@@ -218,4 +219,6 @@ return [
         'show_field' => 'Mező megjelenítése',
         'no_fields' => 'Nincsenek elérhető mezők ehhez a widgethez.',
     ],
+    // Virtual entity index section
+    'remote_rows_label' => 'Távoli',
 ];

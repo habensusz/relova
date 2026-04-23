@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
+use Relova\Concerns\EnforcesTenantIsolation;
 
 /**
  * Maps a Relova connection to a consuming host-app module.
@@ -21,6 +22,7 @@ use Illuminate\Support\Str;
  */
 class ConnectorModuleMapping extends Model
 {
+    use EnforcesTenantIsolation;
     use HasUuids;
 
     protected $guarded = ['id'];
@@ -36,6 +38,8 @@ class ConnectorModuleMapping extends Model
             'field_mappings' => 'array',
             'display_fields' => 'array',
             'filters' => 'array',
+            'joins' => 'array',
+            'default_values' => 'array',
             'cache_ttl_minutes' => 'integer',
             'active' => 'boolean',
         ];
@@ -78,5 +82,39 @@ class ConnectorModuleMapping extends Model
     public function localFieldFor(string $remoteColumn): ?string
     {
         return array_search($remoteColumn, $this->fieldMap(), true) ?: null;
+    }
+
+    /**
+     * Build the SELECT column list for queries that must include joined columns.
+     *
+     * When a mapping has joins and display_fields, returns:
+     *   ["{remote_table}.*", "joinTable.col", ...]
+     *
+     * QueryExecutor turns "locations.location_name" into `"locations"."location_name"`
+     * which the remote DB returns as the flat key "location_name" in the result row.
+     * Ambiguous PK/timestamp columns on joined tables are excluded to prevent
+     * overwriting the main table's own values.
+     *
+     * @return array<int, string>
+     */
+    public function snapshotColumns(): array
+    {
+        if (empty($this->joins) || empty($this->display_fields)) {
+            return ['*'];
+        }
+
+        $ambiguous = ['id', 'uid', 'created_at', 'updated_at', 'deleted_at', 'tenant_id'];
+
+        $joinCols = collect($this->display_fields)
+            ->filter(fn (string $f) => str_contains($f, '.'))
+            ->reject(fn (string $f) => in_array(substr(strrchr($f, '.'), 1), $ambiguous, true))
+            ->values()
+            ->all();
+
+        if (empty($joinCols)) {
+            return ['*'];
+        }
+
+        return array_merge([$this->remote_table.'.*'], $joinCols);
     }
 }

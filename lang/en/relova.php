@@ -155,6 +155,7 @@ return [
     'remote_value' => 'Value',
     'unmapped' => 'Unmapped',
     'no_snapshot_data' => 'No snapshot data available.',
+    'virtual_entity_notice' => 'This is a remote record from a connected source. Local features are not available.',
     'back' => 'Back',
     'snapshot_notice' => 'Live data from a remote source. Mapped fields are synced to local records on refresh.',
 
@@ -255,4 +256,7 @@ return [
         'show_field' => 'Show this field',
         'no_fields' => 'No fields available for this widget.',
     ],
+
+    // Virtual entity index section
+    'remote_rows_label' => 'Remote',
 ];

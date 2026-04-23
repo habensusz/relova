@@ -8,19 +8,11 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
+use Relova\Concerns\EnforcesTenantIsolation;
 
-/**
- * Local pointer to a remote entity in a Relova-connected source.
- *
- * Consumers store the uid/id of this record as their FK — NOT the remote
- * primary key. The display_snapshot holds a small last-known snapshot of
- * label fields for resilience; it is never authoritative data.
- *
- * One row per unique remote entity per tenant, enforced by a composite
- * unique index.
- */
 class VirtualEntityReference extends Model
 {
+    use EnforcesTenantIsolation;
     use HasUuids;
 
     protected $guarded = ['id'];
@@ -55,6 +47,11 @@ class VirtualEntityReference extends Model
     public function connection(): BelongsTo
     {
         return $this->belongsTo(RelovaConnection::class, 'connection_id');
+    }
+
+    public function mapping(): BelongsTo
+    {
+        return $this->belongsTo(ConnectorModuleMapping::class, 'mapping_id');
     }
 
     /**

@@ -122,7 +122,10 @@ class ConnectionController extends Controller
         try {
             $this->registry->assertHostAllowed($connection);
             $driver = $this->drivers->resolve($connection->driver);
-            $ok = $driver->testConnection($this->registry->buildConfig($connection));
+
+            $ok = $this->registry->withTunnel($connection, function (array $config) use ($driver) {
+                return $driver->testConnection($config);
+            });
 
             $ok ? $this->registry->markHealthy($connection) : $this->registry->markError($connection, 'Connection test returned false');
 

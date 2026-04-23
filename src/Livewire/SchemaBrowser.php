@@ -7,41 +7,53 @@ namespace Relova\Livewire;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Relova\Models\RelovaConnection;
-use Relova\Services\RelovaConnectionManager;
+use Relova\Services\QueryExecutor;
+use Relova\Services\SchemaInspector;
+use Throwable;
 
 /**
- * Schema browser — browse tables and columns of a Relova connection.
+ * Browse a remote source's structure.
+ *
+ * Reads table list from Redis-cached schema metadata (cache miss only goes
+ * remote). Fetching column definitions for a single table also hits cache.
+ * Preview rows are streamed via QueryExecutor â€” never bulk-loaded.
  */
 #[Layout('components.layouts.app')]
 class SchemaBrowser extends Component
 {
+    public string $tenantId = '';
+
     public ?string $connectionUid = null;
-
-    public array $connections = [];
-
-    public array $tables = [];
-
-    public array $columns = [];
-
-    public array $previewRows = [];
 
     public ?string $selectedTable = null;
 
-    public bool $loading = false;
+    public string $tableSearch = '';
 
-    public ?string $errorMessage = null;
+    /** @var array<int, array<string, mixed>> */
+    public array $tables = [];
 
-    public int $previewLimit = 25;
+    /** @var array<int, array<string, mixed>> */
+    public array $columns = [];
 
-    public function mount(?string $connectionUid = null): void
+    /** @var array<int, array<string, mixed>> */
+    public array $previewRows = [];
+
+    public ?string $tablesError = null;
+
+    public ?string $columnsError = null;
+
+    public ?string $previewError = null;
+
+    /**
+     * Accept both {uid} (route param) and $connectionUid (direct mount).
+     */
+    public function mount(?string $uid = null, ?string $connectionUid = null): void
     {
-        $this->connections = RelovaConnection::enabled()
-            ->orderBy('name')
-            ->get(['uid', 'name', 'driver_type', 'health_status'])
-            ->toArray();
+        $this->tenantId = (string) (function_exists('tenant') && tenant() ? tenant('id') : '');
 
-        if ($connectionUid) {
-            $this->connectionUid = $connectionUid;
+        $resolved = $uid ?? $connectionUid;
+        if ($resolved) {
+            $this->connectionUid = $resolved;
             $this->loadTables();
         }
     }
@@ -50,103 +62,111 @@ class SchemaBrowser extends Component
     {
         $this->connectionUid = $uid;
         $this->selectedTable = null;
+        $this->tableSearch = '';
         $this->columns = [];
         $this->previewRows = [];
-        $this->errorMessage = null;
+        $this->tablesError = null;
+        $this->columnsError = null;
+        $this->previewError = null;
         $this->loadTables();
     }
 
-    public function loadTables(): void
+    public function selectTable(string $table, SchemaInspector $inspector, QueryExecutor $executor): void
     {
-        if (! $this->connectionUid) {
-            return;
-        }
-
-        try {
-            $connection = RelovaConnection::where('uid', $this->connectionUid)->firstOrFail();
-            $manager = app(RelovaConnectionManager::class);
-
-            $this->tables = $manager->getTables($connection);
-            $this->errorMessage = null;
-        } catch (\Exception $e) {
-            $this->tables = [];
-            $this->errorMessage = $e->getMessage();
-        }
-    }
-
-    public function selectTable(string $tableName): void
-    {
-        $this->selectedTable = $tableName;
+        $this->selectedTable = $table;
+        $this->columns = [];
         $this->previewRows = [];
-        $this->loadColumns();
-    }
+        $this->columnsError = null;
+        $this->previewError = null;
 
-    public function loadColumns(): void
-    {
-        if (! $this->connectionUid || ! $this->selectedTable) {
+        $connection = $this->resolveConnection();
+        if (! $connection) {
             return;
         }
 
         try {
-            $connection = RelovaConnection::where('uid', $this->connectionUid)->firstOrFail();
-            $manager = app(RelovaConnectionManager::class);
+            $this->columns = $inspector->columns($connection, $table);
+        } catch (Throwable $e) {
+            $this->columnsError = $e->getMessage();
+        }
 
-            $this->columns = $manager->getColumns($connection, $this->selectedTable);
-            $this->errorMessage = null;
-        } catch (\Exception $e) {
+        try {
+            $generator = $executor->executePassThrough($connection, $table, limit: 25);
+            $this->previewRows = iterator_to_array($generator, false);
+        } catch (Throwable $e) {
+            $this->previewError = $e->getMessage();
+        }
+    }
+
+    public function flushCache(SchemaInspector $inspector): void
+    {
+        $connection = $this->resolveConnection();
+        if ($connection) {
+            $this->selectedTable = null;
             $this->columns = [];
-            $this->errorMessage = $e->getMessage();
+            $this->previewRows = [];
+            $this->columnsError = null;
+            $this->previewError = null;
+            $this->loadTables(forceRefresh: true);
         }
     }
 
-    public function loadPreview(): void
+    public function updatedTableSearch(): void
     {
-        if (! $this->connectionUid || ! $this->selectedTable) {
+        // Reactive — no extra DB work needed; filtering is done in render()
+    }
+
+    private function loadTables(bool $forceRefresh = false): void
+    {
+        $this->tables = [];
+        $this->tablesError = null;
+
+        $connection = $this->resolveConnection();
+        if (! $connection) {
             return;
         }
 
         try {
-            $connection = RelovaConnection::where('uid', $this->connectionUid)->firstOrFail();
-            $manager = app(RelovaConnectionManager::class);
-
-            $this->previewRows = $manager->preview(
-                $connection,
-                $this->selectedTable,
-                [],
-                $this->previewLimit
-            );
-            $this->errorMessage = null;
-        } catch (\Exception $e) {
-            $this->previewRows = [];
-            $this->errorMessage = $e->getMessage();
+            $inspector = app(SchemaInspector::class);
+            if ($forceRefresh) {
+                $inspector->invalidate($connection);
+            }
+            $this->tables = $inspector->tables($connection);
+        } catch (Throwable $e) {
+            $this->tablesError = $e->getMessage();
         }
     }
 
-    public function refreshSchema(): void
+    private function resolveConnection(): ?RelovaConnection
     {
         if (! $this->connectionUid) {
-            return;
+            return null;
         }
 
-        try {
-            $connection = RelovaConnection::where('uid', $this->connectionUid)->firstOrFail();
-            $manager = app(RelovaConnectionManager::class);
-            $manager->flushCache($connection);
-
-            $this->loadTables();
-
-            if ($this->selectedTable) {
-                $this->loadColumns();
-            }
-
-            $this->dispatch('notify', message: __('relova::relova.cache_flushed'));
-        } catch (\Exception $e) {
-            $this->errorMessage = $e->getMessage();
-        }
+        return RelovaConnection::query()
+            ->where('tenant_id', $this->tenantId)
+            ->where('uid', $this->connectionUid)
+            ->first();
     }
 
-    public function render(): \Illuminate\View\View
+    public function render()
     {
-        return view('relova::livewire.schema-browser');
+        $connections = RelovaConnection::query()
+            ->where('tenant_id', $this->tenantId)
+            ->where('status', 'active')
+            ->orderBy('name')
+            ->get(['uid', 'name', 'driver']);
+
+        $filteredTables = empty($this->tableSearch)
+            ? $this->tables
+            : array_values(array_filter(
+                $this->tables,
+                fn (array $t) => str_contains(strtolower($t['name']), strtolower($this->tableSearch)),
+            ));
+
+        return view('relova::livewire.schema-browser', [
+            'connections' => $connections,
+            'filteredTables' => $filteredTables,
+        ]);
     }
 }

@@ -143,6 +143,9 @@ abstract class AbstractPdoDriver implements ConnectorDriver
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_TIMEOUT => $connectTimeout,
             PDO::ATTR_EMULATE_PREPARES => false,
+            // Persistent per-FPM-worker connection pool — see Spec §21.
+            // Cuts ~10–50ms of TCP+TLS handshake on every request after the first.
+            PDO::ATTR_PERSISTENT => (bool) config('relova.pdo_persistent', true),
         ];
     }
 

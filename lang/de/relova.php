@@ -174,6 +174,7 @@ return [
     'remote_value' => 'Wert',
     'unmapped' => 'Nicht gemappt',
     'no_snapshot_data' => 'Keine Snapshot-Daten verfügbar.',
+    'virtual_entity_notice' => 'Dies ist ein Remote-Datensatz aus einer verbundenen Quelle. Lokale Funktionen sind nicht verfügbar.',
     'back' => 'Zurück',
     'snapshot_notice' => 'Live-Daten aus einer Remote-Quelle. Zugeordnete Felder werden beim Aktualisieren mit lokalen Datensätzen synchronisiert.',
 
@@ -218,4 +219,6 @@ return [
         'show_field' => 'Feld einblenden',
         'no_fields' => 'Keine Felder für dieses Widget verfügbar.',
     ],
+    // Virtual entity index section
+    'remote_rows_label' => 'Extern',
 ];

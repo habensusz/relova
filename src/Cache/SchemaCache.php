@@ -25,7 +25,7 @@ class SchemaCache
     ) {}
 
     /**
-     * @param  callable(array): array  $configBuilder
+     * @param  callable(): array  $configBuilder
      * @return array<int, array<string, mixed>>
      */
     public function getTables(RelovaConnection $connection, ConnectorDriver $driver, callable $configBuilder): array
@@ -33,12 +33,12 @@ class SchemaCache
         return $this->cache->remember(
             $this->tablesKey($connection),
             $this->ttlFor($connection),
-            fn () => $driver->getTables($configBuilder($connection)),
+            fn () => $driver->getTables($configBuilder()),
         );
     }
 
     /**
-     * @param  callable(array): array  $configBuilder
+     * @param  callable(): array  $configBuilder
      * @return array<int, array<string, mixed>>
      */
     public function getColumns(
@@ -50,7 +50,7 @@ class SchemaCache
         return $this->cache->remember(
             $this->columnsKey($connection, $table),
             $this->ttlFor($connection),
-            fn () => $driver->getColumns($configBuilder($connection), $table),
+            fn () => $driver->getColumns($configBuilder(), $table),
         );
     }
 

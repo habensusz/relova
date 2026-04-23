@@ -8,9 +8,9 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Str;
+use Relova\Concerns\EnforcesTenantIsolation;
 use Relova\Security\CredentialEncryptor;
 
 /**
@@ -26,8 +26,8 @@ use Relova\Security\CredentialEncryptor;
  */
 class RelovaConnection extends Model
 {
+    use EnforcesTenantIsolation;
     use HasUuids;
-    use SoftDeletes;
 
     protected $guarded = ['id'];
 
@@ -122,5 +122,29 @@ class RelovaConnection extends Model
             'rest_api' => 'REST API',
             default => ucfirst((string) $this->driver),
         });
+    }
+
+    /**
+     * Build the SSH tunnel config array from the connection's SSH fields and encrypted credentials.
+     *
+     * @return array{host: string, port: int, user: string, private_key: ?string, passphrase: ?string, password: ?string, auth_method: string}
+     */
+    public function toSshConfig(): array
+    {
+        $credentials = $this->credentials();
+        $options = (array) ($this->options ?? []);
+
+        $privateKey = $credentials['ssh_private_key'] ?? null;
+        $sshPassword = $credentials['ssh_password'] ?? ($credentials['password'] ?? null);
+
+        return [
+            'host' => (string) ($this->ssh_host ?? ''),
+            'port' => (int) ($this->ssh_port ?? 22),
+            'user' => (string) ($options['ssh_user'] ?? $credentials['ssh_user'] ?? ''),
+            'private_key' => $privateKey ?: null,
+            'passphrase' => $credentials['ssh_passphrase'] ?? null,
+            'password' => $sshPassword,
+            'auth_method' => ! empty($privateKey) ? 'key' : 'password',
+        ];
     }
 }

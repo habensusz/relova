@@ -230,9 +230,11 @@ class RelovaServiceProvider extends ServiceProvider
             __DIR__.'/../config/relova.php' => config_path('relova.php'),
         ], 'relova-config');
 
-        // Migrations (applied by host app's migrate / tenants:migrate)
-        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
-
+        // Tenant migrations — published to database/migrations/tenant/ so stancl/tenancy
+        // picks them up during MigrateDatabase. Run after package install/update:
+        //   php artisan vendor:publish --tag=relova-tenant-migrations --force
+        // Note: loadMigrationsFrom() is intentionally NOT used here because these are
+        // tenant-schema tables, not central-schema tables.
         $this->publishes([
             __DIR__.'/../database/migrations' => database_path('migrations/tenant'),
         ], 'relova-tenant-migrations');

@@ -1,4 +1,4 @@
-﻿<div class="relative mx-auto container pb-12">
+<div class="relative mx-auto container pb-12">
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
         <div class="py-3 text-gray-900 dark:text-gray-100">
             <article class="container mx-auto" style="min-height: 100px;">
@@ -91,7 +91,7 @@
                                                     <label class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1.5 block">{{ __('relova::ui.remote_table') }}</label>
                                                     @if ($tablesError)
                                                         <div class="px-3 py-2 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 text-xs text-red-600 dark:text-red-400">{{ $tablesError }}</div>
-                                                    @elseif (count($remoteTables) > 0)
+                                                    @elseif (count((array)$remoteTables) > 0)
                                                         <div wire:loading wire:target="connectionUid" class="px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-400 dark:text-gray-500 animate-pulse">{{ __('relova::ui.loading_tables') }}</div>
                                                         <select wire:loading.remove wire:target="connectionUid" wire:model.live="remoteTable"
                                                             class="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl text-sm text-zinc-900 dark:text-gray-100 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:focus:border-sky-400 transition-colors">
@@ -134,8 +134,8 @@
                                                 <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">Map each remote column to a local model field. Remote data flows left to right into your local table.</p>
                                             </div>
                                             <div class="flex items-center gap-2 shrink-0">
-                                                @if (count($fieldMappingRows) > 0)
-                                                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300">{{ count($fieldMappingRows) }} {{ count($fieldMappingRows) === 1 ? 'field' : 'fields' }}</span>
+                                                @if (count((array)$fieldMappingRows) > 0)
+                                                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300">{{ count((array)$fieldMappingRows) }} {{ count((array)$fieldMappingRows) === 1 ? 'field' : 'fields' }}</span>
                                                 @endif
                                                 <button type="button" wire:click="addFieldRow"
                                                     class="flex items-center gap-1 text-xs text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-900/20 px-2 py-1 rounded-lg transition-colors font-semibold">
@@ -145,7 +145,7 @@
                                             </div>
                                         </div>
                                         <div class="p-4">
-                                            @if (count($fieldMappingRows) > 0)
+                                            @if (count((array)$fieldMappingRows) > 0)
                                                 <div class="grid grid-cols-[1fr_auto_1fr_2rem] gap-2 mb-2 px-1">
                                                     <span class="text-[11px] uppercase tracking-wide font-semibold text-gray-400 dark:text-gray-500">Remote column (source)</span>
                                                     <span></span>
@@ -155,7 +155,7 @@
                                                 <div class="space-y-2">
                                                     @foreach ($fieldMappingRows as $i => $row)
                                                         <div wire:key="frow-{{ $i }}" class="grid grid-cols-[1fr_auto_1fr_2rem] items-center gap-2">
-                                                            @if (count($allColumns) > 0)
+                                                            @if (count((array)$allColumns) > 0)
                                                                 <select wire:model="fieldMappingRows.{{ $i }}.remote"
                                                                     class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-zinc-900 dark:text-gray-100 font-mono focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:focus:border-sky-400">
                                                                     <option value="">— remote —</option>
@@ -168,7 +168,7 @@
                                                                     class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-zinc-900 dark:text-gray-100 font-mono focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:focus:border-sky-400" />
                                                             @endif
                                                             <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/></svg>
-                                                            @if (count($localColumns) > 0)
+                                                            @if (count((array)$localColumns) > 0)
                                                                 <select wire:model="fieldMappingRows.{{ $i }}.local"
                                                                     class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-zinc-900 dark:text-gray-100 font-mono focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:focus:border-sky-400">
                                                                     <option value="">— local field —</option>
@@ -200,8 +200,8 @@
                                                 <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">Columns cached in the snapshot — shown in search results and pickers without hitting the remote DB on every render.</p>
                                             </div>
                                             <div class="flex items-center gap-2 shrink-0">
-                                                @if (count($displayFieldSelections) > 0)
-                                                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300">{{ count($displayFieldSelections) }} selected</span>
+                                                @if (count((array)$displayFieldSelections) > 0)
+                                                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300">{{ count((array)$displayFieldSelections) }} selected</span>
                                                 @endif
                                                 @if (count($remoteColumns) > 0)
                                                     <button type="button" wire:click="selectAllDisplayFields" class="text-[11px] text-sky-600 dark:text-sky-400 hover:underline font-semibold">{{ __('relova::ui.select_all') }}</button>
@@ -211,7 +211,7 @@
                                             </div>
                                         </div>
                                         <div class="p-4">
-                                            @if (count($allColumns) > 0)
+                                            @if (count((array)$allColumns) > 0)
                                                 @php
                                                     $columnGroups = collect($allColumns)->groupBy(function ($col) {
                                                         return str_contains($col['name'], '.') ? explode('.', $col['name'])[0] : '__primary__';
@@ -239,7 +239,7 @@
                                                     @endforeach
                                                 </div>
                                             @else
-                                                @if (count($displayFieldSelections) > 0)
+                                                @if (count((array)$displayFieldSelections) > 0)
                                                     <div class="flex flex-wrap gap-2 mb-3">
                                                         @foreach ($displayFieldSelections as $sel)
                                                             <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 rounded-full text-xs font-mono">
@@ -322,8 +322,8 @@
                                                 <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">Appended to every remote query automatically — useful for excluding inactive rows. Remote data is never copied locally.</p>
                                             </div>
                                             <div class="flex items-center gap-2 shrink-0">
-                                                @if (count($filterRows) > 0)
-                                                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300">{{ count($filterRows) }} {{ count($filterRows) === 1 ? 'filter' : 'filters' }}</span>
+                                                @if (count((array)$filterRows) > 0)
+                                                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300">{{ count((array)$filterRows) }} {{ count((array)$filterRows) === 1 ? 'filter' : 'filters' }}</span>
                                                 @else
                                                     <span class="text-[10px] uppercase tracking-wide font-semibold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">advanced</span>
                                                 @endif
@@ -332,7 +332,7 @@
                                         </button>
                                         @if ($showFilters)
                                         <div class="p-4">
-                                            @if (count($filterRows) > 0)
+                                            @if (count((array)$filterRows) > 0)
                                                 <div class="grid grid-cols-[1fr_auto_1fr_2rem] gap-2 mb-2 px-1">
                                                     <span class="text-[11px] uppercase tracking-wide font-semibold text-gray-400 dark:text-gray-500">{{ __('relova::ui.filter_column') }}</span>
                                                     <span></span>

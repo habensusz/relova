@@ -61,13 +61,44 @@ class VirtualEntityProxy
      * Read a property from the snapshot (or live if the snapshot misses).
      *
      * Lookup order:
-     *   1. Direct key in display_snapshot (remote column name).
-     *   2. Translated key via field_mappings (local → remote).
-     *   3. Live fetch from the remote source (populates $liveRow).
-     *   4. null.
+     *   1. Direct key in mapping->default_values (host-app override, highest priority).
+     *   2. FK resolution: if default_values has {stem}_id and $name is {stem}_name,
+     *      resolves App\Models\{Stem}::find(id)->{stem}_name so that, e.g.,
+     *      default_values['location_id']=5 makes ->location_name return the local
+     *      Location #5 name rather than the remote snapshot value.
+     *   3. Direct key in display_snapshot (remote column name).
+     *   4. Translated key via field_mappings (local → remote).
+     *   5. Live fetch from the remote source (populates $liveRow).
+     *   6. null.
      */
     public function __get(string $name): mixed
     {
+        // 1. Mapping default_values — host-app overrides take priority over remote data.
+        $defaults = $this->mapping->default_values ?? [];
+        if (array_key_exists($name, $defaults) && $defaults[$name] !== null && $defaults[$name] !== '') {
+            return $defaults[$name];
+        }
+
+        // 2. FK → display-name resolution.
+        //    When default_values has {stem}_id and the caller wants {stem}_name,
+        //    look up the local model record and return its display column.
+        //    Result is cached per-instance so multi-row lists only hit the DB once.
+        if (str_ends_with($name, '_name') && ! empty($defaults)) {
+            $stem = substr($name, 0, -5);                     // 'location' from 'location_name'
+            $fkKey = $stem.'_id';
+            if (isset($defaults[$fkKey]) && is_numeric($defaults[$fkKey])) {
+                $cacheKey = 'dfk_'.$fkKey.'_'.$defaults[$fkKey].'_'.$name;
+                if (! array_key_exists($cacheKey, $this->relationCache)) {
+                    $modelClass = 'App\\Models\\'.Str::studly($stem);
+                    $related = class_exists($modelClass) ? $modelClass::find((int) $defaults[$fkKey]) : null;
+                    $this->relationCache[$cacheKey] = ($related !== null && isset($related->{$name})) ? $related->{$name} : null;
+                }
+                if ($this->relationCache[$cacheKey] !== null) {
+                    return $this->relationCache[$cacheKey];
+                }
+            }
+        }
+
         $snapshot = $this->relova_ref->display_snapshot ?? [];
 
         // Direct hit on remote column name stored verbatim in snapshot.

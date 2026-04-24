@@ -109,7 +109,13 @@ class MappingManager extends Component
 
     public function mount(): void
     {
-        $this->tenantId = (string) (function_exists('tenant') && tenant() ? tenant('id') : '');
+        if (function_exists('tenant') && tenant()) {
+            $this->tenantId = (string) tenant('id');
+        } elseif (app()->bound('relova.current_tenant')) {
+            $this->tenantId = (string) app('relova.current_tenant');
+        } else {
+            $this->tenantId = '';
+        }
         $this->premisesId = Auth::user()?->premises_id;
 
         // List only tables in the current tenant's PostgreSQL schema.

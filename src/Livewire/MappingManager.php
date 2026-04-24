@@ -704,6 +704,7 @@ class MappingManager extends Component
             'connections' => $connections,
             'moduleOptions' => $moduleOptions,
             'allColumns' => $allColumns,
+            'localColumns' => $this->localColumns,
             'localFkOptions' => $localFkOptions,
             'localFkColumns' => $localFkColumns,
         ]);

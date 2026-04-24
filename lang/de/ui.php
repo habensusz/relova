@@ -153,4 +153,38 @@ return [
 
     'menu_label' => 'Relova',
     'menu_description' => 'Externe Datenquellen & Zuordnungen',
+
+    'breadcrumb_relova' => 'Relova',
+    'breadcrumb_dashboard' => 'Übersicht',
+    'breadcrumb_connections' => 'Verbindungen',
+    'breadcrumb_mappings' => 'Zuordnungen',
+    'breadcrumb_schema' => 'Schema',
+
+    'tab_overview' => 'Übersicht',
+    'tab_connections' => 'Verbindungen',
+    'tab_mappings' => 'Zuordnungen',
+    'tab_schema' => 'Schema-Browser',
+
+    'overview_subtitle' => 'Status und Aktualität aller mit diesem Mandanten verbundenen externen Datenquellen.',
+    'connections_count' => '{0} Keine Verbindungen|{1} :count Verbindung|[2,*] :count Verbindungen',
+    'mappings_count' => '{0} Keine Zuordnungen|{1} :count Zuordnung|[2,*] :count Zuordnungen',
+    'field_singular' => 'Feld',
+    'field_plural' => 'Felder',
+    'join_singular' => 'Join',
+    'join_plural' => 'Joins',
+    'default_singular' => 'Standardwert',
+    'default_plural' => 'Standardwerte',
+    'filter_singular' => 'Filter',
+    'filter_plural' => 'Filter',
+    'no_mappings_hint' => 'Lege eine Zuordnung an, um Remote-Daten in ein lokales Modul zu laden.',
+    'last_checked' => 'Zuletzt geprüft',
+    'never_checked' => 'Noch nicht geprüft',
+    'view_schema' => 'Schema anzeigen',
+    'back_to_dashboard' => 'Zurück zur Übersicht',
+    'back_to_connections' => 'Zurück zu Verbindungen',
+
+    'status_active' => 'Aktiv',
+    'status_error' => 'Fehler',
+    'status_unreachable' => 'Nicht erreichbar',
+    'status_pending' => 'Ausstehend',
 ];

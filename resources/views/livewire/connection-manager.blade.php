@@ -1,29 +1,34 @@
-<div class="relative mx-auto container pb-12">
-    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-        <div class="py-3 text-gray-900 dark:text-gray-100">
-            <article class="container mx-auto" style="min-height: 100px;">
+<div>
+    <div class="px-4 sm:px-6 lg:px-8 pt-4 pb-12 max-w-7xl mx-auto">
 
-                {{-- Main card: header + inline form --}}
-                <div class="rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg overflow-hidden mb-6">
+        {{-- ── Breadcrumb ───────────────────────────────────────────── --}}
+        @include('relova::partials._breadcrumb', [
+            'items' => [
+                ['label' => __('relova::ui.breadcrumb_connections')],
+            ],
+        ])
+
+        {{-- ── Page header ──────────────────────────────────────────── --}}
+        <div class="mt-3">
+            @include('relova::partials._page-header', [
+                'icon'     => 'M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244',
+                'title'    => __('relova::ui.connections'),
+                'subtitle' => __('relova::ui.connections_subtitle'),
+                'metaText' => trans_choice('relova::ui.connections_count', $connections->count(), ['count' => $connections->count()]),
+                'actions'  => $showForm ? null : 'relova::partials._connection-manager-actions',
+            ])
+        </div>
+
+        {{-- ── Sub-navigation tabs ──────────────────────────────────── --}}
+        @include('relova::partials._sub-nav', ['active' => 'connections'])
+
+        <article style="min-height: 100px;">
+
+            {{-- Inline create/edit form — appears as a single card above the list --}}
+            @if ($showForm)
+                <div class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm overflow-hidden mb-5">
                     <div class="h-1 bg-gradient-to-r from-sky-500 via-indigo-500 to-purple-500"></div>
-
-                    {{-- Card header --}}
-                    <div class="px-6 py-5 flex items-center justify-between gap-4">
-                        <div>
-                            <h1 class="text-xl font-bold text-zinc-900 dark:text-white">{{ __('relova::ui.connections') }}</h1>
-                            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ __('relova::ui.connections_subtitle') }}</p>
-                        </div>
-                        @if (!$showForm)
-                            <button wire:click="openCreate" type="button"
-                                class="px-4 py-2 bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-xl shadow-md shadow-sky-500/25 transition-all duration-200">
-                                {{ __('relova::ui.new_connection') }}
-                            </button>
-                        @endif
-                    </div>
-
-                    {{-- Inline form — expands below header when open --}}
-                    @if ($showForm)
-                        <div class="border-t border-gray-100 dark:border-gray-700">
+                    <div>
                             <form wire:submit="save" class="px-6 py-6 space-y-5">
 
                                 {{-- Form title --}}
@@ -197,85 +202,59 @@
                                 </div>
 
                             </form>
-                        </div>
-                    @endif
-                </div>
-
-                {{-- Test results --}}
-                @if ($testResult)
-                    <div class="mb-4 px-4 py-3 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 text-sm">
-                        {{ __('relova::ui.test_passed') }}
                     </div>
-                @endif
-                @if ($testError)
-                    <div class="mb-4 px-4 py-3 rounded-xl bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 text-sm">
-                        {{ $testError }}
+                </div>
+            @endif
+
+            {{-- Test results --}}
+            @if ($testResult)
+                <div class="mb-4 px-4 py-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800/50 text-emerald-800 dark:text-emerald-300 text-sm flex items-center gap-2">
+                    <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>
+                    {{ __('relova::ui.test_passed') }}
+                </div>
+            @endif
+            @if ($testError)
+                <div class="mb-4 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800/50 text-red-800 dark:text-red-300 text-sm flex items-start gap-2">
+                    <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z"/></svg>
+                    <span class="break-all">{{ $testError }}</span>
+                </div>
+            @endif
+
+            {{-- Search bar --}}
+            <div class="mb-4 relative">
+                <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/></svg>
+                <input wire:model.live.debounce.300ms="search" type="text"
+                    placeholder="{{ __('relova::ui.search_placeholder') }}"
+                    class="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:focus:border-sky-400 transition-colors" />
+            </div>
+
+            {{-- Connection list (iTenance index-list-row pattern) --}}
+            @if ($connections->isEmpty())
+                <div class="rounded-2xl bg-white dark:bg-gray-800 border-2 border-dashed border-gray-200 dark:border-gray-700 p-12 text-center">
+                    <div class="w-12 h-12 mx-auto rounded-xl bg-gradient-to-br from-sky-100 to-indigo-200 dark:from-sky-900/50 dark:to-indigo-800/50 flex items-center justify-center mb-3">
+                        <svg class="w-6 h-6 text-sky-700 dark:text-sky-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244"/></svg>
                     </div>
-                @endif
-
-                {{-- Search --}}
-                <div class="mb-4">
-                    <input wire:model.live.debounce.300ms="search" type="text"
-                        placeholder="{{ __('relova::ui.search_placeholder') }}"
-                        class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl text-sm text-zinc-900 dark:text-gray-100 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:focus:border-sky-400" />
+                    <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ __('relova::ui.no_connections_yet') }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-5">{{ __('relova::ui.connections_subtitle') }}</p>
+                    @unless ($showForm)
+                        <button wire:click="openCreate" type="button"
+                            class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-xl shadow-md shadow-sky-500/25 transition-all duration-200">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                            {{ __('relova::ui.create_first_connection') }}
+                        </button>
+                    @endunless
                 </div>
-
-                {{-- Connection list --}}
-                <div class="rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-lg overflow-hidden">
-                    @if ($connections->isEmpty())
-                        <div class="text-center py-12 text-sm text-gray-500 dark:text-gray-400">
-                            {{ __('relova::ui.no_connections_yet') }}
-                        </div>
-                    @else
-                        <ul class="divide-y divide-gray-100 dark:divide-gray-700">
-                            @foreach ($connections as $connection)
-                                <li wire:key="conn-{{ $connection->uid }}" class="px-6 py-4 flex items-start gap-4">
-                                    <span @class([
-                                        'w-2 h-2 rounded-full shrink-0 mt-2',
-                                        'bg-emerald-500' => $connection->status === 'active',
-                                        'bg-amber-500'   => $connection->status === 'error',
-                                        'bg-red-500'     => $connection->status === 'unreachable',
-                                    ])></span>
-                                    <div class="flex-1 min-w-0 overflow-hidden">
-                                        <div class="font-semibold text-zinc-900 dark:text-white truncate">{{ $connection->name }}</div>
-                                        <div class="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                            <span class="uppercase">{{ $connection->driver }}</span>
-                                            @if ($connection->host)
-                                                &middot; {{ $connection->host }}@if ($connection->port):{{ $connection->port }}@endif
-                                            @endif
-                                            @if ($connection->database) &middot; {{ $connection->database }} @endif
-                                        </div>
-                                        @if ($connection->last_error)
-                                            <div class="text-xs text-red-600 dark:text-red-400 mt-1 line-clamp-2" title="{{ $connection->last_error }}">{{ $connection->last_error }}</div>
-                                        @endif
-                                    </div>
-                                    <div class="flex items-center gap-2 shrink-0">
-                                        <button wire:click="test('{{ $connection->uid }}')" type="button"
-                                            class="px-3 py-1.5 text-xs font-semibold bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-all duration-200">
-                                            <span wire:loading.remove wire:target="test('{{ $connection->uid }}')">{{ __('relova::ui.test') }}</span>
-                                            <span wire:loading wire:target="test('{{ $connection->uid }}')">&#8230;</span>
-                                        </button>
-                                        <a href="{{ route('relova.connections.schema', $connection->uid) }}"
-                                            class="px-3 py-1.5 text-xs font-semibold bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-all duration-200">
-                                            {{ __('relova::ui.schema') }}
-                                        </a>
-                                        <button wire:click="openEdit('{{ $connection->uid }}')" type="button"
-                                            class="px-3 py-1.5 text-xs font-semibold bg-sky-600 hover:bg-sky-700 text-white rounded-lg transition-all duration-200">
-                                            {{ __('relova::ui.edit') }}
-                                        </button>
-                                        <button wire:click="delete('{{ $connection->uid }}')"
-                                            wire:confirm="{{ __('relova::ui.confirm_delete') }}" type="button"
-                                            class="px-3 py-1.5 text-xs font-semibold bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-100 dark:border-red-800 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition-all duration-200">
-                                            {{ __('relova::ui.delete') }}
-                                        </button>
-                                    </div>
-                                </li>
-                            @endforeach
-                        </ul>
-                    @endif
+            @else
+                <div class="space-y-2">
+                    @foreach ($connections as $connection)
+                        @include('relova::partials._connection-row', [
+                            'c' => $connection,
+                            'showActions' => true,
+                        ])
+                    @endforeach
                 </div>
+            @endif
 
-            </article>
-        </div>
+        </article>
     </div>
 </div>

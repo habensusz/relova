@@ -153,4 +153,38 @@ return [
 
     'menu_label' => 'Relova',
     'menu_description' => 'Külső adatforrások és leképezések',
+
+    'breadcrumb_relova' => 'Relova',
+    'breadcrumb_dashboard' => 'Áttekintés',
+    'breadcrumb_connections' => 'Kapcsolatok',
+    'breadcrumb_mappings' => 'Leképezések',
+    'breadcrumb_schema' => 'Séma',
+
+    'tab_overview' => 'Áttekintés',
+    'tab_connections' => 'Kapcsolatok',
+    'tab_mappings' => 'Leképezések',
+    'tab_schema' => 'Sémaböngésző',
+
+    'overview_subtitle' => 'A bérlőhöz kapcsolt összes külső adatforrás állapota és frissessége.',
+    'connections_count' => '{0} Nincs kapcsolat|{1} :count kapcsolat|[2,*] :count kapcsolat',
+    'mappings_count' => '{0} Nincs leképezés|{1} :count leképezés|[2,*] :count leképezés',
+    'field_singular' => 'mező',
+    'field_plural' => 'mező',
+    'join_singular' => 'kapcsolódás',
+    'join_plural' => 'kapcsolódás',
+    'default_singular' => 'alapértelmezés',
+    'default_plural' => 'alapértelmezés',
+    'filter_singular' => 'szűrő',
+    'filter_plural' => 'szűrő',
+    'no_mappings_hint' => 'Hozz létre egy leképezést, hogy távoli adatokat tölts be egy helyi modulba.',
+    'last_checked' => 'Utolsó ellenőrzés',
+    'never_checked' => 'Még nem ellenőrizve',
+    'view_schema' => 'Séma megtekintése',
+    'back_to_dashboard' => 'Vissza az áttekintéshez',
+    'back_to_connections' => 'Vissza a kapcsolatokhoz',
+
+    'status_active' => 'Aktív',
+    'status_error' => 'Hiba',
+    'status_unreachable' => 'Nem elérhető',
+    'status_pending' => 'Függőben',
 ];

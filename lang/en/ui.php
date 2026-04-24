@@ -165,4 +165,42 @@ return [
     // Virtual entity show pages
     'virtual_record_readonly' => 'This record originates from a remote system and is read-only.',
     'remote_data' => 'Remote Data',
+
+    // Breadcrumb / sub-navigation
+    'breadcrumb_relova' => 'Relova',
+    'breadcrumb_dashboard' => 'Overview',
+    'breadcrumb_connections' => 'Connections',
+    'breadcrumb_mappings' => 'Mappings',
+    'breadcrumb_schema' => 'Schema',
+
+    // Sub-tabs
+    'tab_overview' => 'Overview',
+    'tab_connections' => 'Connections',
+    'tab_mappings' => 'Mappings',
+    'tab_schema' => 'Schema browser',
+
+    // Index page chrome
+    'overview_subtitle' => 'Health and freshness of every external data source connected to this tenant.',
+    'connections_count' => '{0} No connections|{1} :count connection|[2,*] :count connections',
+    'mappings_count' => '{0} No mappings|{1} :count mapping|[2,*] :count mappings',
+    'field_singular' => 'field',
+    'field_plural' => 'fields',
+    'join_singular' => 'join',
+    'join_plural' => 'joins',
+    'default_singular' => 'default',
+    'default_plural' => 'defaults',
+    'filter_singular' => 'filter',
+    'filter_plural' => 'filters',
+    'no_mappings_hint' => 'Create a mapping to start pulling remote data into a local module.',
+    'last_checked' => 'Last checked',
+    'never_checked' => 'Never checked',
+    'view_schema' => 'View schema',
+    'back_to_dashboard' => 'Back to overview',
+    'back_to_connections' => 'Back to connections',
+
+    // Status labels (status pills on cards)
+    'status_active' => 'Active',
+    'status_error' => 'Error',
+    'status_unreachable' => 'Unreachable',
+    'status_pending' => 'Pending',
 ];

@@ -1,37 +1,35 @@
-<div class="relative mx-auto container pb-12">
-    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-        <div class="py-3 text-gray-900 dark:text-gray-100">
-            <article class="container mx-auto" style="min-height: 100px;">
+<div>
+    <div class="px-4 sm:px-6 lg:px-8 pt-4 pb-12 max-w-7xl mx-auto">
 
-                {{-- ── Main card ── --}}
-                <div class="rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg overflow-hidden mb-6">
+        {{-- ── Breadcrumb ───────────────────────────────────────────── --}}
+        @include('relova::partials._breadcrumb', [
+            'items' => [
+                ['label' => __('relova::ui.breadcrumb_mappings')],
+            ],
+        ])
+
+        {{-- ── Page header ──────────────────────────────────────────── --}}
+        <div class="mt-3">
+            @include('relova::partials._page-header', [
+                'icon'     => 'M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5',
+                'title'    => __('relova::ui.module_mappings'),
+                'subtitle' => __('relova::ui.module_mappings_subtitle'),
+                'metaText' => trans_choice('relova::ui.mappings_count', $mappings->count(), ['count' => $mappings->count()]),
+                'actions'  => $showForm ? null : 'relova::partials._mapping-manager-actions',
+            ])
+        </div>
+
+        {{-- ── Sub-navigation tabs ──────────────────────────────────── --}}
+        @include('relova::partials._sub-nav', ['active' => 'mappings'])
+
+        <article style="min-height: 100px;">
+
+            {{-- Inline create/edit form card --}}
+            @if ($showForm)
+                <div class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm overflow-hidden mb-5">
                     <div class="h-1 bg-gradient-to-r from-sky-500 via-indigo-500 to-purple-500"></div>
-
-                    {{-- Header --}}
-                    <div class="px-6 py-5 flex items-center justify-between gap-4">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-100 to-indigo-200 dark:from-sky-900/50 dark:to-indigo-800/50 flex items-center justify-center shrink-0">
-                                <svg class="w-5 h-5 text-sky-600 dark:text-sky-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <h1 class="text-xl font-bold text-zinc-900 dark:text-white">{{ __('relova::ui.module_mappings') }}</h1>
-                                <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{{ __('relova::ui.module_mappings_subtitle') }}</p>
-                            </div>
-                        </div>
-                        @if (!$showForm)
-                            <button wire:click="openCreate" type="button"
-                                class="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-xl shadow-md shadow-sky-500/25 transition-all duration-200">
-                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-                                {{ __('relova::ui.new_mapping') }}
-                            </button>
-                        @endif
-                    </div>
-
-                    @if ($showForm)
-                        <div class="border-t border-gray-100 dark:border-gray-700">
-                            <form wire:submit="save">
+                    <div>
+                        <form wire:submit="save">
                                 {{-- Form title bar --}}
                                 <div class="px-6 py-4 bg-gray-50 dark:bg-gray-700/40 flex items-center justify-between border-b border-gray-100 dark:border-gray-700">
                                     <div>
@@ -412,113 +410,39 @@
 
                                 </div>
                             </form>
-                        </div>
-                    @endif
+                    </div>
                 </div>
+            @endif
 
-                {{-- ── Mappings list ── --}}
-                <div class="rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-lg overflow-hidden">
-                    @if ($mappings->isEmpty())
-                        <div class="text-center py-16">
-                            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-sky-100 to-indigo-200 dark:from-sky-900/50 dark:to-indigo-800/50 flex items-center justify-center mx-auto mb-3">
-                                <svg class="w-6 h-6 text-sky-600 dark:text-sky-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"/>
-                                </svg>
-                            </div>
-                            <p class="text-sm font-medium text-gray-600 dark:text-gray-300">{{ __('relova::ui.no_mappings_yet') }}</p>
-                            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Create a mapping to start pulling remote data into a local module.</p>
-                        </div>
-                    @else
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-sm">
-                                <thead>
-                                    <tr class="border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/40">
-                                        <th class="text-left px-4 py-3 text-xs uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400">{{ __('relova::ui.module') }}</th>
-                                        <th class="text-left px-4 py-3 text-xs uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400">{{ __('relova::ui.connection') }}</th>
-                                        <th class="text-left px-4 py-3 text-xs uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400">{{ __('relova::ui.remote_table') }}</th>
-                                        <th class="text-left px-4 py-3 text-xs uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400">Details</th>
-                                        <th class="text-left px-4 py-3 text-xs uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400">{{ __('relova::ui.status') }}</th>
-                                        <th class="px-4 py-3"></th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                                    @foreach ($mappings as $mapping)
-                                        <tr wire:key="map-{{ $mapping->uid }}" class="hover:bg-sky-50/50 dark:hover:bg-gray-700/40 transition-colors">
-                                            <td class="px-4 py-3.5">
-                                                <span class="font-semibold text-zinc-900 dark:text-white">{{ $mapping->module_key }}</span>
-                                                @if ($mapping->premises_id)
-                                                    <div class="mt-1">
-                                                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] rounded-md bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 border border-violet-100 dark:border-violet-800">
-                                                            <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z"/></svg>
-                                                            Premises #{{ $mapping->premises_id }}
-                                                        </span>
-                                                    </div>
-                                                @endif
-                                            </td>
-                                            <td class="px-4 py-3.5 text-zinc-700 dark:text-gray-300">{{ optional($mapping->connection)->name ?? '—' }}</td>
-                                            <td class="px-4 py-3.5">
-                                                <span class="font-mono text-xs bg-gray-100 dark:bg-gray-700 text-zinc-700 dark:text-gray-300 px-2 py-0.5 rounded-md">{{ $mapping->remote_table }}</span>
-                                                @if ($mapping->remote_pk_column && $mapping->remote_pk_column !== 'id')
-                                                    <div class="mt-0.5 text-[10px] text-gray-400 dark:text-gray-500">pk: {{ $mapping->remote_pk_column }}</div>
-                                                @endif
-                                            </td>
-                                            <td class="px-4 py-3.5">
-                                                <div class="flex flex-wrap gap-1">
-                                                    @if ($mapping->field_mappings && count($mapping->field_mappings))
-                                                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold rounded-md bg-sky-50 dark:bg-sky-900/20 text-sky-700 dark:text-sky-300 border border-sky-100 dark:border-sky-800/50">
-                                                            <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/></svg>
-                                                            {{ count($mapping->field_mappings) }} {{ count($mapping->field_mappings) === 1 ? 'field' : 'fields' }}
-                                                        </span>
-                                                    @endif
-                                                    @if ($mapping->joins && count($mapping->joins))
-                                                        <span class="inline-flex px-1.5 py-0.5 text-[10px] font-semibold rounded-md bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800/50">{{ count($mapping->joins) }} {{ count($mapping->joins) === 1 ? 'join' : 'joins' }}</span>
-                                                    @endif
-                                                    @if ($mapping->default_values && count($mapping->default_values))
-                                                        <span class="inline-flex px-1.5 py-0.5 text-[10px] font-semibold rounded-md bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-100 dark:border-amber-800/50">{{ count($mapping->default_values) }} default{{ count($mapping->default_values) !== 1 ? 's' : '' }}</span>
-                                                    @endif
-                                                    @if ($mapping->filters && count($mapping->filters))
-                                                        <span class="inline-flex px-1.5 py-0.5 text-[10px] font-semibold rounded-md bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-400 border border-violet-100 dark:border-violet-800/50">{{ count($mapping->filters) }} filter{{ count($mapping->filters) !== 1 ? 's' : '' }}</span>
-                                                    @endif
-                                                </div>
-                                            </td>
-                                            <td class="px-4 py-3.5">
-                                                @if ($mapping->active)
-                                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
-                                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
-                                                        {{ __('relova::ui.active') }}
-                                                    </span>
-                                                @else
-                                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
-                                                        <span class="w-1.5 h-1.5 rounded-full bg-gray-400 shrink-0"></span>
-                                                        {{ __('relova::ui.inactive') }}
-                                                    </span>
-                                                @endif
-                                            </td>
-                                            <td class="px-4 py-3.5">
-                                                <div class="flex items-center justify-end gap-1">
-                                                    <button wire:click="toggle('{{ $mapping->uid }}')" type="button"
-                                                        class="px-2.5 py-1.5 text-[11px] font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                                                        {{ $mapping->active ? __('relova::ui.disable') : __('relova::ui.enable') }}
-                                                    </button>
-                                                    <button wire:click="openEdit('{{ $mapping->uid }}')" type="button"
-                                                        class="px-2.5 py-1.5 text-[11px] font-semibold bg-sky-600 hover:bg-sky-700 text-white rounded-lg transition-colors">
-                                                        {{ __('relova::ui.edit') }}
-                                                    </button>
-                                                    <button wire:click="delete('{{ $mapping->uid }}')" wire:confirm="{{ __('relova::ui.confirm_delete') }}" type="button"
-                                                        class="px-2.5 py-1.5 text-[11px] font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
-                                                        {{ __('relova::ui.delete') }}
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                    @endif
+            {{-- ── Mappings list (iTenance card-row pattern) ── --}}
+            @if ($mappings->isEmpty())
+                <div class="rounded-2xl bg-white dark:bg-gray-800 border-2 border-dashed border-gray-200 dark:border-gray-700 p-12 text-center">
+                    <div class="w-12 h-12 mx-auto rounded-xl bg-gradient-to-br from-sky-100 to-indigo-200 dark:from-sky-900/50 dark:to-indigo-800/50 flex items-center justify-center mb-3">
+                        <svg class="w-6 h-6 text-sky-700 dark:text-sky-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
+                        </svg>
+                    </div>
+                    <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ __('relova::ui.no_mappings_yet') }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-5">{{ __('relova::ui.no_mappings_hint') }}</p>
+                    @unless ($showForm)
+                        <button wire:click="openCreate" type="button"
+                            class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-xl shadow-md shadow-sky-500/25 transition-all duration-200">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                            {{ __('relova::ui.new_mapping') }}
+                        </button>
+                    @endunless
                 </div>
+            @else
+                <div class="space-y-2">
+                    @foreach ($mappings as $mapping)
+                        @include('relova::partials._mapping-row', [
+                            'm' => $mapping,
+                            'showActions' => true,
+                        ])
+                    @endforeach
+                </div>
+            @endif
 
-            </article>
-        </div>
+        </article>
     </div>
 </div>

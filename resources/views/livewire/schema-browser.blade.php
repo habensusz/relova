@@ -1,23 +1,28 @@
-<div class="relative mx-auto container pb-12">
-    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-        <div class="py-3 text-gray-900 dark:text-gray-100">
-            <article class="container mx-auto" style="min-height: 100px;">
+<div>
+    <div class="px-4 sm:px-6 lg:px-8 pt-4 pb-12 max-w-7xl mx-auto">
 
-                {{-- Header --}}
-                <div class="rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg overflow-hidden mb-6">
-                    <div class="h-1 bg-gradient-to-r from-sky-500 via-indigo-500 to-purple-500"></div>
-                    <div class="p-6 flex items-center gap-4">
-                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-100 to-indigo-200 dark:from-sky-900/50 dark:to-indigo-800/50 flex items-center justify-center shrink-0">
-                            <svg class="w-5 h-5 text-sky-600 dark:text-sky-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 5.625c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
-                            </svg>
-                        </div>
-                        <div>
-                            <h1 class="text-xl font-bold text-zinc-900 dark:text-white">{{ __('relova::ui.schema_browser') }}</h1>
-                            <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{{ __('relova::ui.schema_browser_subtitle') }}</p>
-                        </div>
-                    </div>
-                </div>
+        {{-- ── Breadcrumb ───────────────────────────────────────────── --}}
+        @include('relova::partials._breadcrumb', [
+            'items' => [
+                ['label' => __('relova::ui.breadcrumb_connections'), 'url' => tenancy()->initialized ? tenant()->route('relova.connections.index') : route('relova.connections.index')],
+                ['label' => __('relova::ui.breadcrumb_schema')],
+            ],
+        ])
+
+        {{-- ── Page header ──────────────────────────────────────────── --}}
+        <div class="mt-3">
+            @include('relova::partials._page-header', [
+                'icon'     => 'M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 5.625c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125',
+                'title'    => __('relova::ui.schema_browser'),
+                'subtitle' => __('relova::ui.schema_browser_subtitle'),
+                'actions'  => 'relova::partials._schema-browser-actions',
+            ])
+        </div>
+
+        {{-- ── Sub-navigation tabs ──────────────────────────────────── --}}
+        @include('relova::partials._sub-nav', ['active' => 'schema'])
+
+        <article style="min-height: 100px;">
 
                 <div class="flex gap-4 items-start">
 
@@ -260,6 +265,5 @@
 
                 </div>
             </article>
-        </div>
     </div>
 </div>

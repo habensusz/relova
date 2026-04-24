@@ -26,6 +26,7 @@ class VirtualEntityReference extends Model
     {
         return [
             'display_snapshot' => 'array',
+            'local_overrides' => 'array',
             'snapshot_taken_at' => 'datetime',
         ];
     }

@@ -67,6 +67,17 @@ class MappingManager extends Component
     public array $defaultValues = [];
 
     /**
+     * Backward-compat shim — renamed to $defaultValues.
+     * Kept so Livewire can hydrate snapshots created before the rename
+     * without throwing PublicPropertyNotFoundException.
+     *
+     * @deprecated will be removed once all in-flight snapshots expire
+     *
+     * @var array<int, array<string, string>>
+     */
+    public array $defaultValueRows = [];
+
+    /**
      * JOIN specifications added by the user.
      * Each row: {table: string, type: string, foreign_key: string, references: string}
      *

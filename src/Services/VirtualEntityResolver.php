@@ -115,7 +115,16 @@ class VirtualEntityResolver
         ?string $search = null,
     ): array {
         $query = VirtualEntityReference::with('mapping')
-            ->whereHas('mapping', fn ($q) => $q->where('module_key', $moduleKey))
+            ->where(function ($q) use ($moduleKey): void {
+                // Primary: match via mapping relationship (records where mapping_id is set).
+                $q->whereHas('mapping', fn ($inner) => $inner->where('module_key', $moduleKey))
+                    // Fallback: records synced before mapping_id column was populated or before
+                    // the current mapping existed. We match by remote_table instead so that
+                    // pre-existing snapshots are not hidden after a mapping is recreated.
+                    ->orWhere(function ($inner) use ($moduleKey): void {
+                        $inner->whereNull('mapping_id')->where('remote_table', $moduleKey);
+                    });
+            })
             ->when($tenantId, fn ($q) => $q->where('tenant_id', $tenantId))
             ->when($search, fn ($q) => $q->where(function ($inner) use ($search) {
                 $inner->whereRaw('display_snapshot::text ILIKE ?', ["%{$search}%"]);

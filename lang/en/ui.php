@@ -155,6 +155,9 @@ return [
     'remote_pk_column' => 'PK column',
     'remote_pk_column_hint' => 'Column that uniquely identifies each record in the remote table (used to resolve references).',
 
+    // FK picker
+    'select_local_entity' => 'Select from local database',
+
     // Side menu
     'menu_label' => 'Relova',
     'menu_description' => 'External data sources & mappings',

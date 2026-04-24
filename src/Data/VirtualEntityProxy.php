@@ -178,6 +178,33 @@ class VirtualEntityProxy
     }
 
     /**
+     * Return the local location ID (host-app locations.id) anchored to this
+     * mapping.  Null means no location was assigned at mapping time, so this
+     * virtual entity cannot participate in location-filtered queries.
+     */
+    public function getLocalLocationId(): ?int
+    {
+        return $this->mapping->getLocalFkId('location_id');
+    }
+
+    /**
+     * Resolve the local premises ID for this virtual entity by walking through
+     * the anchored location.  Returns null when no location is set or when the
+     * host app does not expose App\Models\Location.
+     */
+    public function getLocalPremisesId(): ?int
+    {
+        $locationId = $this->getLocalLocationId();
+
+        if ($locationId === null) {
+            return null;
+        }
+
+        /** @phpstan-ignore-next-line */
+        return \App\Models\Location::find($locationId)?->premises_id;
+    }
+
+    /**
      * Fetch a fresh single row from the remote source.
      * Result is cached on this instance so subsequent __get() calls don't
      * issue additional queries.

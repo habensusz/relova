@@ -149,6 +149,8 @@ return [
     'remote_pk_column' => 'PK-Spalte',
     'remote_pk_column_hint' => 'Spalte, die jeden Datensatz in der Remote-Tabelle eindeutig identifiziert (für die Referenzauflösung).',
 
+    'select_local_entity' => 'Aus lokaler Datenbank auswählen',
+
     'menu_label' => 'Relova',
     'menu_description' => 'Externe Datenquellen & Zuordnungen',
 ];

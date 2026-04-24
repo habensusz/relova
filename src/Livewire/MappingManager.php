@@ -640,6 +640,48 @@ class MappingManager extends Component
             'connections' => $connections,
             'moduleOptions' => $moduleOptions,
             'allColumns' => $allColumns,
+            'localFkOptions' => $this->resolveLocalFkOptions(),
         ]);
+    }
+
+    /**
+     * Load local entity options for known FK columns.
+     *
+     * Returns an array keyed by column name, each value being an array of
+     * objects with 'id' and 'label'. Queries are small (reference tables only)
+     * and results are not cached on the component — they are fresh on each render.
+     *
+     * The FK picker map is the single source of truth for which columns get a
+     * local entity picker vs a free-text input in the default_values section.
+     * Add entries here as new local FK relationships are introduced.
+     *
+     * @return array<string, array<int, object{id: int, label: string}>>
+     */
+    private function resolveLocalFkOptions(): array
+    {
+        $map = [
+            'location_id'     => ['table' => 'locations',     'label_col' => 'location_name'],
+            'manufacturer_id' => ['table' => 'manufacturers', 'label_col' => 'manufacturer_name'],
+            'supplier_id'     => ['table' => 'suppliers',     'label_col' => 'supplier_name'],
+            'part_id'         => ['table' => 'parts',         'label_col' => 'part_name'],
+            'premises_id'     => ['table' => 'premises',      'label_col' => 'premises_name'],
+            'category_id'     => ['table' => 'categories',    'label_col' => 'category_name'],
+            'priority_id'     => ['table' => 'priorities',    'label_col' => 'priority_name'],
+        ];
+
+        $result = [];
+
+        foreach ($map as $column => $spec) {
+            try {
+                $rows = DB::select(
+                    'SELECT id, '.$spec['label_col'].' AS label FROM '.$spec['table'].' ORDER BY '.$spec['label_col']
+                );
+                $result[$column] = $rows;
+            } catch (\Throwable) {
+                // Table doesn't exist in this host-app context — skip silently.
+            }
+        }
+
+        return $result;
     }
 }

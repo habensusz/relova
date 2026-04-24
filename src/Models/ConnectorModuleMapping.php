@@ -117,4 +117,20 @@ class ConnectorModuleMapping extends Model
 
         return array_merge([$this->remote_table.'.*'], $joinCols);
     }
+
+    /**
+     * Return the local host-app integer ID stored in default_values for the
+     * given FK column name (e.g. 'location_id', 'manufacturer_id').
+     *
+     * default_values is the canonical source of truth for all local FK anchors.
+     * No dedicated columns per dependency type — any FK can be stored here.
+     *
+     * Returns null when the column is not present or has an empty/non-numeric value.
+     */
+    public function getLocalFkId(string $column): ?int
+    {
+        $value = ($this->default_values ?? [])[$column] ?? null;
+
+        return ($value !== null && is_numeric($value)) ? (int) $value : null;
+    }
 }

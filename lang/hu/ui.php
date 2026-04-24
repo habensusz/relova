@@ -149,6 +149,8 @@ return [
     'remote_pk_column' => 'PK oszlop',
     'remote_pk_column_hint' => 'Az a mező, amely egyedileg azonosítja a rekordokat a távoli táblában (hivatkozás-feloldáshoz).',
 
+    'select_local_entity' => 'Kiválasztás a helyi adatbázisból',
+
     'menu_label' => 'Relova',
     'menu_description' => 'Külső adatforrások és leképezések',
 ];

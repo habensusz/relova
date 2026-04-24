@@ -59,13 +59,12 @@ class MappingManager extends Component
     public array $filterRows = [];
 
     /**
-     * Fallback values for NOT NULL local columns that cannot be mapped from a
-     * remote column (e.g. FK columns that differ across DB instances).
-     * Each row: {column: string, value: string}
+     * Default values for local FK columns the remote system does not have.
+     * Keyed by local column name (e.g. 'location_id'), value is the local entity ID.
      *
-     * @var array<int, array{column: string, value: string}>
+     * @var array<string, string>
      */
-    public array $defaultValueRows = [];
+    public array $defaultValues = [];
 
     /**
      * JOIN specifications added by the user.
@@ -407,17 +406,15 @@ class MappingManager extends Component
         array_splice($this->filterRows, $index, 1);
     }
 
-    // ── Default values ───────────────────────────────────────────────────────
+    // ── Section toggles ──────────────────────────────────────────────────────
 
-    public function addDefaultValueRow(): void
+    public function toggleSection(string $section): void
     {
-        $this->defaultValueRows[] = ['column' => '', 'value' => ''];
-        $this->showDefaultValues = true;
-    }
+        $allowed = ['showDefaultValues', 'showFilters'];
 
-    public function removeDefaultValueRow(int $index): void
-    {
-        array_splice($this->defaultValueRows, $index, 1);
+        if (in_array($section, $allowed, true)) {
+            $this->$section = ! $this->$section;
+        }
     }
 
     // ── CRUD ─────────────────────────────────────────────────────────────────
@@ -485,9 +482,7 @@ class MappingManager extends Component
             $this->filterRows[] = ['column' => (string) $col, 'value' => (string) $val];
         }
 
-        foreach ($mapping->default_values ?? [] as $col => $val) {
-            $this->defaultValueRows[] = ['column' => (string) $col, 'value' => (string) $val];
-        }
+        $this->defaultValues = array_map('strval', $mapping->default_values ?? []);
 
         // Restore JOIN rows and load joined-table columns.
         $this->joinRows = [];
@@ -507,7 +502,7 @@ class MappingManager extends Component
 
         // Populate local-column picker and auto-expand sections that have data.
         $this->localColumns = $this->loadLocalColumns($this->moduleKey);
-        $this->showDefaultValues = ! empty($this->defaultValueRows);
+        $this->showDefaultValues = ! empty($this->defaultValues);
         $this->showJoins = ! empty($this->joinRows);
         $this->showFilters = ! empty($this->filterRows);
 
@@ -548,13 +543,10 @@ class MappingManager extends Component
             }
         }
 
-        $defaultValues = [];
-
-        foreach ($this->defaultValueRows as $row) {
-            if (($row['column'] ?? '') !== '') {
-                $defaultValues[$row['column']] = $row['value'] ?? '';
-            }
-        }
+        $defaultValues = array_filter(
+            $this->defaultValues,
+            fn ($v) => $v !== '' && $v !== null
+        );
 
         $joins = [];
 
@@ -645,7 +637,7 @@ class MappingManager extends Component
         $this->displayFieldSelections = [];
         $this->newDisplayField = '';
         $this->filterRows = [];
-        $this->defaultValueRows = [];
+        $this->defaultValues = [];
         $this->joinRows = [];
         $this->remoteTables = [];
         $this->remoteColumns = [];
@@ -654,7 +646,6 @@ class MappingManager extends Component
         $this->columnsError = '';
         $this->localColumns = [];
         $this->showDefaultValues = false;
-        $this->showJoins = false;
         $this->showFilters = false;
         $this->resetErrorBag();
     }
@@ -699,12 +690,16 @@ class MappingManager extends Component
             }
         }
 
+        $localFkOptions = $this->resolveLocalFkOptions();
+        $localFkColumns = array_values(array_intersect($this->localColumns, array_keys($localFkOptions)));
+
         return view('relova::livewire.mapping-manager', [
             'mappings' => $mappings,
             'connections' => $connections,
             'moduleOptions' => $moduleOptions,
             'allColumns' => $allColumns,
-            'localFkOptions' => $this->resolveLocalFkOptions(),
+            'localFkOptions' => $localFkOptions,
+            'localFkColumns' => $localFkColumns,
         ]);
     }
 

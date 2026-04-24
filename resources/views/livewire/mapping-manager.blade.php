@@ -264,18 +264,19 @@
                                         </div>
                                     </div>
 
-                                    {{-- Step 4: Local FK defaults (collapsible) --}}
+                                    {{-- Step 4: Local relationship anchors --}}
                                     <div class="rounded-xl border border-gray-200 dark:border-gray-600 overflow-hidden">
-                                        <button type="button" wire:click="$toggle('showDefaultValues')"
+                                        <button type="button" wire:click="toggleSection('showDefaultValues')"
                                             class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700/50 flex items-center gap-3 border-b border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/70 transition-colors text-left">
                                             <span class="w-6 h-6 rounded-full bg-amber-500 text-white text-xs font-bold flex items-center justify-center shrink-0">4</span>
                                             <div class="flex-1 min-w-0">
                                                 <p class="text-sm font-semibold text-zinc-900 dark:text-white">{{ __('relova::ui.default_values') }}</p>
-                                                <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">Anchor required local FK columns the remote system does not have (e.g. location_id, manufacturer_id).</p>
+                                                <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">Set which local {{ $moduleKey ?: 'entity' }} record each imported remote row should be linked to by default.</p>
                                             </div>
                                             <div class="flex items-center gap-2 shrink-0">
-                                                @if (count($defaultValueRows) > 0)
-                                                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">{{ count($defaultValueRows) }} set</span>
+                                                @php $setCount = count(array_filter($defaultValues, fn($v) => $v !== '' && $v !== null)); @endphp
+                                                @if ($setCount > 0)
+                                                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">{{ $setCount }} set</span>
                                                 @else
                                                     <span class="text-[10px] uppercase tracking-wide font-semibold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">optional</span>
                                                 @endif
@@ -284,157 +285,38 @@
                                         </button>
                                         @if ($showDefaultValues)
                                         <div class="p-4">
-                                            <div class="flex gap-3 px-4 py-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 mb-4">
-                                                <svg class="w-4 h-4 text-amber-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"/></svg>
-                                                <p class="text-xs text-amber-700 dark:text-amber-300">{{ __('relova::ui.default_values_hint') }}</p>
-                                            </div>
-                                            @if (count($defaultValueRows) > 0)
-                                                <div class="grid grid-cols-[1fr_auto_1fr_2rem] gap-2 mb-2 px-1">
-                                                    <span class="text-[11px] uppercase tracking-wide font-semibold text-gray-400 dark:text-gray-500">{{ __('relova::ui.local_field') }}</span>
-                                                    <span></span>
-                                                    <span class="text-[11px] uppercase tracking-wide font-semibold text-gray-400 dark:text-gray-500">{{ __('relova::ui.default_value') }}</span>
-                                                    <span></span>
-                                                </div>
-                                                <div class="space-y-2 mb-4">
-                                                    @foreach ($defaultValueRows as $i => $drow)
-                                                        <div wire:key="dv-{{ $i }}" class="grid grid-cols-[1fr_auto_1fr_2rem] items-center gap-2">
-                                                            @if (count($localFkOptions) > 0)
-                                                                <select wire:model.live="defaultValueRows.{{ $i }}.column"
-                                                                    class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-zinc-900 dark:text-gray-100 font-mono focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 dark:focus:border-amber-400">
-                                                                    <option value="">— FK column —</option>
-                                                                    @foreach (array_keys($localFkOptions) as $fkCol)
-                                                                        <option value="{{ $fkCol }}">{{ $fkCol }}</option>
-                                                                    @endforeach
-                                                                </select>
-                                                            @else
-                                                                <input wire:model.live="defaultValueRows.{{ $i }}.column" type="text" placeholder="location_id"
-                                                                    class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-zinc-900 dark:text-gray-100 font-mono focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 dark:focus:border-amber-400" />
-                                                            @endif
-                                                            <span class="text-gray-400 dark:text-gray-500 text-sm font-mono shrink-0">=</span>
-                                                            @if (isset($localFkOptions[$drow['column'] ?? '']))
-                                                                <select wire:model="defaultValueRows.{{ $i }}.value"
-                                                                    class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-zinc-900 dark:text-gray-100 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 dark:focus:border-amber-400">
-                                                                    <option value="">— {{ __('relova::ui.select_local_entity') }} —</option>
-                                                                    @foreach ($localFkOptions[$drow['column']] as $fkOpt)
-                                                                        <option value="{{ $fkOpt->id }}">{{ $fkOpt->label }}</option>
-                                                                    @endforeach
-                                                                </select>
-                                                            @else
-                                                                <input wire:model="defaultValueRows.{{ $i }}.value" type="text" placeholder="1"
-                                                                    class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-zinc-900 dark:text-gray-100 font-mono focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 dark:focus:border-amber-400" />
-                                                            @endif
-                                                            <button type="button" wire:click="removeDefaultValueRow({{ $i }})"
-                                                                class="flex items-center justify-center w-8 h-8 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">&times;</button>
+                                            @if ($moduleKey === '')
+                                                <p class="text-sm text-gray-400 dark:text-gray-500 italic text-center py-2">Select a local table first to see which relationship anchors are available.</p>
+                                            @elseif (empty($localFkColumns))
+                                                <p class="text-sm text-gray-400 dark:text-gray-500 italic text-center py-2">No known local FK relationships found in the <span class="font-mono">{{ $moduleKey }}</span> table.</p>
+                                            @else
+                                                <div class="space-y-3">
+                                                    @foreach ($localFkColumns as $col)
+                                                        <div wire:key="dfv-{{ $col }}" class="flex items-center gap-4">
+                                                            <label class="w-44 shrink-0">
+                                                                <span class="font-mono text-sm text-zinc-900 dark:text-white">{{ $col }}</span>
+                                                                <span class="block text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">{{ str_replace(['_id', '_'], ['', ' '], $col) }}</span>
+                                                            </label>
+                                                            <select wire:model="defaultValues.{{ $col }}"
+                                                                class="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-xl text-sm text-zinc-900 dark:text-gray-100 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 dark:focus:border-amber-400 transition-colors">
+                                                                <option value="">— none (leave NULL) —</option>
+                                                                @foreach ($localFkOptions[$col] as $fkOpt)
+                                                                    <option value="{{ $fkOpt->id }}">{{ $fkOpt->label }}</option>
+                                                                @endforeach
+                                                            </select>
                                                         </div>
                                                     @endforeach
                                                 </div>
                                             @endif
-                                            <button type="button" wire:click="addDefaultValueRow"
-                                                class="flex items-center gap-1.5 text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 px-3 py-1.5 rounded-lg transition-colors font-semibold">
-                                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-                                                {{ __('relova::ui.add_default_value') }}
-                                            </button>
                                         </div>
                                         @endif
                                     </div>
 
-                                    {{-- Step 5: Joins (collapsible, advanced, only when remote table selected) --}}
-                                    @if ($remoteTable !== '')
-                                        <div class="rounded-xl border border-gray-200 dark:border-gray-600 overflow-hidden">
-                                            <button type="button" wire:click="$toggle('showJoins')"
-                                                class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700/50 flex items-center gap-3 border-b border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/70 transition-colors text-left">
-                                                <span class="w-6 h-6 rounded-full bg-indigo-500 text-white text-xs font-bold flex items-center justify-center shrink-0">5</span>
-                                                <div class="flex-1 min-w-0">
-                                                    <p class="text-sm font-semibold text-zinc-900 dark:text-white">{{ __('relova::ui.joins') }}</p>
-                                                    <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">{{ __('relova::ui.joins_hint') }}</p>
-                                                </div>
-                                                <div class="flex items-center gap-2 shrink-0">
-                                                    @if (count($joinRows) > 0)
-                                                        <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300">{{ count($joinRows) }} {{ count($joinRows) === 1 ? 'join' : 'joins' }}</span>
-                                                    @else
-                                                        <span class="text-[10px] uppercase tracking-wide font-semibold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">advanced</span>
-                                                    @endif
-                                                    <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform duration-200 {{ $showJoins ? 'rotate-180' : '' }}" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
-                                                </div>
-                                            </button>
-                                            @if ($showJoins)
-                                            <div class="p-4">
-                                                @if (count($joinRows) > 0)
-                                                    <div class="grid grid-cols-[1.5fr_1fr_1fr_0.5fr_2rem] gap-2 mb-2 px-1">
-                                                        <span class="text-[11px] uppercase tracking-wide font-semibold text-gray-400 dark:text-gray-500">{{ __('relova::ui.join_table') }}</span>
-                                                        <span class="text-[11px] uppercase tracking-wide font-semibold text-gray-400 dark:text-gray-500">{{ __('relova::ui.join_foreign_key') }}</span>
-                                                        <span class="text-[11px] uppercase tracking-wide font-semibold text-gray-400 dark:text-gray-500">{{ __('relova::ui.join_references') }}</span>
-                                                        <span class="text-[11px] uppercase tracking-wide font-semibold text-gray-400 dark:text-gray-500">{{ __('relova::ui.join_type') }}</span>
-                                                        <span></span>
-                                                    </div>
-                                                    <div class="space-y-2 mb-4">
-                                                        @foreach ($joinRows as $ji => $jrow)
-                                                            @php $jTable = $jrow['table'] ?? ''; @endphp
-                                                            <div wire:key="jrow-{{ $ji }}" class="grid grid-cols-[1.5fr_1fr_1fr_0.5fr_2rem] items-center gap-2">
-                                                                @if (count($remoteTables) > 0)
-                                                                    <select wire:model="joinRows.{{ $ji }}.table" wire:change="loadJoinTableColumns({{ $ji }})"
-                                                                        class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm font-mono text-zinc-900 dark:text-gray-100 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:focus:border-sky-400">
-                                                                        <option value="">— table —</option>
-                                                                        @foreach ($remoteTables as $t)
-                                                                            <option value="{{ $t['name'] }}">{{ $t['name'] }}</option>
-                                                                        @endforeach
-                                                                    </select>
-                                                                @else
-                                                                    <input wire:model.blur="joinRows.{{ $ji }}.table" wire:blur="loadJoinTableColumns({{ $ji }})"
-                                                                        type="text" placeholder="manufacturers"
-                                                                        class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm font-mono text-zinc-900 dark:text-gray-100 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:focus:border-sky-400" />
-                                                                @endif
-                                                                @if (count($remoteColumns) > 0)
-                                                                    <select wire:model="joinRows.{{ $ji }}.foreign_key"
-                                                                        class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm font-mono text-zinc-900 dark:text-gray-100 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:focus:border-sky-400">
-                                                                        <option value="">— fk col —</option>
-                                                                        @foreach ($remoteColumns as $col)
-                                                                            <option value="{{ $col['name'] }}">{{ $col['name'] }}</option>
-                                                                        @endforeach
-                                                                    </select>
-                                                                @else
-                                                                    <input wire:model="joinRows.{{ $ji }}.foreign_key" type="text" placeholder="manufacturer_id"
-                                                                        class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm font-mono text-zinc-900 dark:text-gray-100 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:focus:border-sky-400" />
-                                                                @endif
-                                                                @if ($jTable !== '' && !empty($joinedTableColumns[$jTable]))
-                                                                    <select wire:model="joinRows.{{ $ji }}.references"
-                                                                        class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm font-mono text-zinc-900 dark:text-gray-100 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:focus:border-sky-400">
-                                                                        @foreach ($joinedTableColumns[$jTable] as $col)
-                                                                            <option value="{{ $col['name'] }}">{{ $col['name'] }}</option>
-                                                                        @endforeach
-                                                                    </select>
-                                                                @else
-                                                                    <input wire:model="joinRows.{{ $ji }}.references" type="text" placeholder="id"
-                                                                        class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm font-mono text-zinc-900 dark:text-gray-100 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:focus:border-sky-400" />
-                                                                @endif
-                                                                <select wire:model="joinRows.{{ $ji }}.type"
-                                                                    class="w-full px-2 py-2 border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg text-xs font-mono text-zinc-900 dark:text-gray-100 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:focus:border-sky-400">
-                                                                    <option value="LEFT">LEFT</option>
-                                                                    <option value="INNER">INNER</option>
-                                                                </select>
-                                                                <button type="button" wire:click="removeJoinRow({{ $ji }})"
-                                                                    class="flex items-center justify-center w-8 h-8 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">&times;</button>
-                                                            </div>
-                                                        @endforeach
-                                                    </div>
-                                                @else
-                                                    <p class="text-sm text-gray-400 dark:text-gray-500 italic mb-4">{{ __('relova::ui.joins_empty') }}</p>
-                                                @endif
-                                                <button type="button" wire:click="addJoinRow"
-                                                    class="flex items-center gap-1.5 text-sm text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 px-3 py-1.5 rounded-lg transition-colors font-semibold">
-                                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-                                                    {{ __('relova::ui.add_join') }}
-                                                </button>
-                                            </div>
-                                            @endif
-                                        </div>
-                                    @endif
-
-                                    {{-- Step 6: Always-on filters (collapsible, advanced) --}}
+                                    {{-- Step 5: Always-on filters (collapsible, advanced) --}}
                                     <div class="rounded-xl border border-gray-200 dark:border-gray-600 overflow-hidden">
-                                        <button type="button" wire:click="$toggle('showFilters')"
+                                        <button type="button" wire:click="toggleSection('showFilters')"
                                             class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700/50 flex items-center gap-3 border-b border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/70 transition-colors text-left">
-                                            <span class="w-6 h-6 rounded-full bg-violet-500 text-white text-xs font-bold flex items-center justify-center shrink-0">6</span>
+                                            <span class="w-6 h-6 rounded-full bg-violet-500 text-white text-xs font-bold flex items-center justify-center shrink-0">5</span>
                                             <div class="flex-1 min-w-0">
                                                 <p class="text-sm font-semibold text-zinc-900 dark:text-white">{{ __('relova::ui.always_on_filters') }}</p>
                                                 <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">Appended to every remote query automatically — useful for excluding inactive rows. Remote data is never copied locally.</p>
@@ -492,10 +374,10 @@
                                         @endif
                                     </div>
 
-                                    {{-- Step 7: Settings --}}
+                                    {{-- Step 6: Settings --}}
                                     <div class="rounded-xl border border-gray-200 dark:border-gray-600 overflow-hidden">
                                         <div class="px-4 py-3 bg-gray-50 dark:bg-gray-700/50 flex items-center gap-3 border-b border-gray-200 dark:border-gray-600">
-                                            <span class="w-6 h-6 rounded-full bg-gray-400 dark:bg-gray-500 text-white text-xs font-bold flex items-center justify-center shrink-0">7</span>
+                                            <span class="w-6 h-6 rounded-full bg-gray-400 dark:bg-gray-500 text-white text-xs font-bold flex items-center justify-center shrink-0">6</span>
                                             <p class="text-sm font-semibold text-zinc-900 dark:text-white">Settings</p>
                                         </div>
                                         <div class="p-4">

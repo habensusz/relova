@@ -93,6 +93,16 @@ class MappingManager extends Component
     /** @var array<int, string> Local DB table names used for the module key picker. */
     public array $localTables = [];
 
+    /** @var array<int, string> Column names from the selected local module table (for the local-field picker). */
+    public array $localColumns = [];
+
+    /** Whether the optional collapsible sections are expanded. */
+    public bool $showDefaultValues = false;
+
+    public bool $showJoins = false;
+
+    public bool $showFilters = false;
+
     /** @var array<int, string> */
     public array $syncBehaviors = ['virtual', 'snapshot_cache', 'on_demand'];
 
@@ -166,6 +176,8 @@ class MappingManager extends Component
      */
     public function updatedModuleKey(): void
     {
+        $this->localColumns = $this->loadLocalColumns($this->moduleKey);
+
         if ($this->editing || $this->moduleKey === '') {
             return;
         }
@@ -203,6 +215,45 @@ class MappingManager extends Component
         // Pre-populate field rows with the local module's column names so the user
         // only needs to fill in the matching remote column name for each one.
         $this->fieldMappingRows = $this->introspectLocalColumns($key);
+    }
+
+    /**
+     * Load all (non-internal) column names for a local table — used to populate
+     * the local-field picker in the field mapping rows.
+     *
+     * @return array<int, string>
+     */
+    private function loadLocalColumns(string $moduleKey): array
+    {
+        if ($moduleKey === '') {
+            return [];
+        }
+
+        $skip = ['id', 'uid', 'created_at', 'updated_at', 'deleted_at', 'premises_id', 'tenant_id'];
+
+        try {
+            $rows = DB::select(
+                'SELECT column_name FROM information_schema.columns
+                 WHERE table_schema = current_schema()
+                   AND table_name = ?
+                 ORDER BY ordinal_position',
+                [$moduleKey]
+            );
+        } catch (\Throwable) {
+            return [];
+        }
+
+        $result = [];
+
+        foreach ($rows as $row) {
+            $col = is_object($row) ? $row->column_name : ($row['column_name'] ?? '');
+
+            if ($col !== '' && ! in_array($col, $skip, true)) {
+                $result[] = $col;
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -306,6 +357,7 @@ class MappingManager extends Component
     public function addJoinRow(): void
     {
         $this->joinRows[] = ['table' => '', 'type' => 'LEFT', 'foreign_key' => '', 'references' => 'id'];
+        $this->showJoins = true;
     }
 
     public function removeJoinRow(int $index): void
@@ -347,6 +399,7 @@ class MappingManager extends Component
     public function addFilterRow(): void
     {
         $this->filterRows[] = ['column' => '', 'value' => ''];
+        $this->showFilters = true;
     }
 
     public function removeFilterRow(int $index): void
@@ -359,6 +412,7 @@ class MappingManager extends Component
     public function addDefaultValueRow(): void
     {
         $this->defaultValueRows[] = ['column' => '', 'value' => ''];
+        $this->showDefaultValues = true;
     }
 
     public function removeDefaultValueRow(int $index): void
@@ -450,6 +504,12 @@ class MappingManager extends Component
         foreach ($this->joinRows as $idx => $_) {
             $this->loadJoinTableColumns($idx);
         }
+
+        // Populate local-column picker and auto-expand sections that have data.
+        $this->localColumns = $this->loadLocalColumns($this->moduleKey);
+        $this->showDefaultValues = ! empty($this->defaultValueRows);
+        $this->showJoins = ! empty($this->joinRows);
+        $this->showFilters = ! empty($this->filterRows);
 
         $this->showForm = true;
     }
@@ -592,6 +652,10 @@ class MappingManager extends Component
         $this->joinedTableColumns = [];
         $this->tablesError = '';
         $this->columnsError = '';
+        $this->localColumns = [];
+        $this->showDefaultValues = false;
+        $this->showJoins = false;
+        $this->showFilters = false;
         $this->resetErrorBag();
     }
 

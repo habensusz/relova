@@ -168,8 +168,18 @@
                                                                     class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-zinc-900 dark:text-gray-100 font-mono focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:focus:border-sky-400" />
                                                             @endif
                                                             <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/></svg>
-                                                            <input wire:model="fieldMappingRows.{{ $i }}.local" type="text" placeholder="local_field"
-                                                                class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-zinc-900 dark:text-gray-100 font-mono focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:focus:border-sky-400" />
+                                                            @if (count($localColumns) > 0)
+                                                                <select wire:model="fieldMappingRows.{{ $i }}.local"
+                                                                    class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-zinc-900 dark:text-gray-100 font-mono focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:focus:border-sky-400">
+                                                                    <option value="">— local field —</option>
+                                                                    @foreach ($localColumns as $lcol)
+                                                                        <option value="{{ $lcol }}">{{ $lcol }}</option>
+                                                                    @endforeach
+                                                                </select>
+                                                            @else
+                                                                <input wire:model="fieldMappingRows.{{ $i }}.local" type="text" placeholder="local_field"
+                                                                    class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-zinc-900 dark:text-gray-100 font-mono focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:focus:border-sky-400" />
+                                                            @endif
                                                             <button type="button" wire:click="removeFieldRow({{ $i }})"
                                                                 class="flex items-center justify-center w-8 h-8 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">&times;</button>
                                                         </div>
@@ -255,8 +265,8 @@
                                     </div>
 
                                     {{-- Step 4: Local FK defaults (collapsible) --}}
-                                    <div x-data="{ open: {{ count($defaultValueRows) > 0 ? 'true' : 'false' }} }" class="rounded-xl border border-gray-200 dark:border-gray-600 overflow-hidden">
-                                        <button type="button" x-on:click="open = !open"
+                                    <div class="rounded-xl border border-gray-200 dark:border-gray-600 overflow-hidden">
+                                        <button type="button" wire:click="$toggle('showDefaultValues')"
                                             class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700/50 flex items-center gap-3 border-b border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/70 transition-colors text-left">
                                             <span class="w-6 h-6 rounded-full bg-amber-500 text-white text-xs font-bold flex items-center justify-center shrink-0">4</span>
                                             <div class="flex-1 min-w-0">
@@ -269,10 +279,11 @@
                                                 @else
                                                     <span class="text-[10px] uppercase tracking-wide font-semibold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">optional</span>
                                                 @endif
-                                                <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
+                                                <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform duration-200 {{ $showDefaultValues ? 'rotate-180' : '' }}" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
                                             </div>
                                         </button>
-                                        <div x-show="open" x-cloak class="p-4">
+                                        @if ($showDefaultValues)
+                                        <div class="p-4">
                                             <div class="flex gap-3 px-4 py-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 mb-4">
                                                 <svg class="w-4 h-4 text-amber-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"/></svg>
                                                 <p class="text-xs text-amber-700 dark:text-amber-300">{{ __('relova::ui.default_values_hint') }}</p>
@@ -287,8 +298,18 @@
                                                 <div class="space-y-2 mb-4">
                                                     @foreach ($defaultValueRows as $i => $drow)
                                                         <div wire:key="dv-{{ $i }}" class="grid grid-cols-[1fr_auto_1fr_2rem] items-center gap-2">
-                                                            <input wire:model.live="defaultValueRows.{{ $i }}.column" type="text" placeholder="location_id"
-                                                                class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-zinc-900 dark:text-gray-100 font-mono focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 dark:focus:border-amber-400" />
+                                                            @if (count($localFkOptions) > 0)
+                                                                <select wire:model.live="defaultValueRows.{{ $i }}.column"
+                                                                    class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-zinc-900 dark:text-gray-100 font-mono focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 dark:focus:border-amber-400">
+                                                                    <option value="">— FK column —</option>
+                                                                    @foreach (array_keys($localFkOptions) as $fkCol)
+                                                                        <option value="{{ $fkCol }}">{{ $fkCol }}</option>
+                                                                    @endforeach
+                                                                </select>
+                                                            @else
+                                                                <input wire:model.live="defaultValueRows.{{ $i }}.column" type="text" placeholder="location_id"
+                                                                    class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-zinc-900 dark:text-gray-100 font-mono focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 dark:focus:border-amber-400" />
+                                                            @endif
                                                             <span class="text-gray-400 dark:text-gray-500 text-sm font-mono shrink-0">=</span>
                                                             @if (isset($localFkOptions[$drow['column'] ?? '']))
                                                                 <select wire:model="defaultValueRows.{{ $i }}.value"
@@ -314,12 +335,13 @@
                                                 {{ __('relova::ui.add_default_value') }}
                                             </button>
                                         </div>
+                                        @endif
                                     </div>
 
                                     {{-- Step 5: Joins (collapsible, advanced, only when remote table selected) --}}
                                     @if ($remoteTable !== '')
-                                        <div x-data="{ open: {{ count($joinRows) > 0 ? 'true' : 'false' }} }" class="rounded-xl border border-gray-200 dark:border-gray-600 overflow-hidden">
-                                            <button type="button" x-on:click="open = !open"
+                                        <div class="rounded-xl border border-gray-200 dark:border-gray-600 overflow-hidden">
+                                            <button type="button" wire:click="$toggle('showJoins')"
                                                 class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700/50 flex items-center gap-3 border-b border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/70 transition-colors text-left">
                                                 <span class="w-6 h-6 rounded-full bg-indigo-500 text-white text-xs font-bold flex items-center justify-center shrink-0">5</span>
                                                 <div class="flex-1 min-w-0">
@@ -332,10 +354,11 @@
                                                     @else
                                                         <span class="text-[10px] uppercase tracking-wide font-semibold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">advanced</span>
                                                     @endif
-                                                    <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
+                                                    <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform duration-200 {{ $showJoins ? 'rotate-180' : '' }}" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
                                                 </div>
                                             </button>
-                                            <div x-show="open" x-cloak class="p-4">
+                                            @if ($showJoins)
+                                            <div class="p-4">
                                                 @if (count($joinRows) > 0)
                                                     <div class="grid grid-cols-[1.5fr_1fr_1fr_0.5fr_2rem] gap-2 mb-2 px-1">
                                                         <span class="text-[11px] uppercase tracking-wide font-semibold text-gray-400 dark:text-gray-500">{{ __('relova::ui.join_table') }}</span>
@@ -403,12 +426,13 @@
                                                     {{ __('relova::ui.add_join') }}
                                                 </button>
                                             </div>
+                                            @endif
                                         </div>
                                     @endif
 
                                     {{-- Step 6: Always-on filters (collapsible, advanced) --}}
-                                    <div x-data="{ open: {{ count($filterRows) > 0 ? 'true' : 'false' }} }" class="rounded-xl border border-gray-200 dark:border-gray-600 overflow-hidden">
-                                        <button type="button" x-on:click="open = !open"
+                                    <div class="rounded-xl border border-gray-200 dark:border-gray-600 overflow-hidden">
+                                        <button type="button" wire:click="$toggle('showFilters')"
                                             class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700/50 flex items-center gap-3 border-b border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/70 transition-colors text-left">
                                             <span class="w-6 h-6 rounded-full bg-violet-500 text-white text-xs font-bold flex items-center justify-center shrink-0">6</span>
                                             <div class="flex-1 min-w-0">
@@ -421,10 +445,11 @@
                                                 @else
                                                     <span class="text-[10px] uppercase tracking-wide font-semibold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">advanced</span>
                                                 @endif
-                                                <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
+                                                <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform duration-200 {{ $showFilters ? 'rotate-180' : '' }}" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
                                             </div>
                                         </button>
-                                        <div x-show="open" x-cloak class="p-4">
+                                        @if ($showFilters)
+                                        <div class="p-4">
                                             @if (count($filterRows) > 0)
                                                 <div class="grid grid-cols-[1fr_auto_1fr_2rem] gap-2 mb-2 px-1">
                                                     <span class="text-[11px] uppercase tracking-wide font-semibold text-gray-400 dark:text-gray-500">{{ __('relova::ui.filter_column') }}</span>
@@ -464,6 +489,7 @@
                                                 {{ __('relova::ui.add_filter') }}
                                             </button>
                                         </div>
+                                        @endif
                                     </div>
 
                                     {{-- Step 7: Settings --}}

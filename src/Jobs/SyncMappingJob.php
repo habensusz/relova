@@ -37,7 +37,16 @@ class SyncMappingJob implements ShouldQueue
 
     public function handle(SyncEngine $sync): void
     {
-        $sync->forceSync($this->mapping);
+        // Bind the tenant context so EnforcesTenantIsolation global scope allows
+        // queries inside this job. Without this, all VirtualEntityReference and
+        // ConnectorModuleMapping queries return empty (WHERE false).
+        app()->instance('relova.current_tenant', (string) $this->mapping->tenant_id);
+
+        try {
+            $sync->forceSync($this->mapping);
+        } finally {
+            app()->forgetInstance('relova.current_tenant');
+        }
 
         // Set legacy dedup locks so older read paths (LoadModel autoSync,
         // VirtualDataService) don't immediately re-dispatch.

@@ -1,5 +1,4 @@
-<div>
-    <div class="px-4 sm:px-6 lg:px-8 pt-4 pb-12 max-w-7xl mx-auto">
+<div class="px-4 sm:px-6 lg:px-8 pt-4 pb-12 max-w-7xl mx-auto">
 
         {{-- ── Breadcrumb ───────────────────────────────────────────── --}}
         @include('relova::partials._breadcrumb', [
@@ -10,7 +9,7 @@
         ])
 
         {{-- ── Page header ──────────────────────────────────────────── --}}
-        <div class="mt-3">
+        <div class="mt-3 mb-4">
             @include('relova::partials._page-header', [
                 'icon'     => 'M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 5.625c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125',
                 'title'    => __('relova::ui.schema_browser'),
@@ -265,5 +264,4 @@
 
                 </div>
             </article>
-    </div>
 </div>

@@ -1,5 +1,4 @@
-﻿<div>
-    <div class="px-4 sm:px-6 lg:px-8 pt-4 pb-12 max-w-7xl mx-auto">
+﻿<div class="px-4 sm:px-6 lg:px-8 pt-4 pb-12 max-w-7xl mx-auto">
 
         {{-- ── Breadcrumb ───────────────────────────────────────────── --}}
         @include('relova::partials._breadcrumb', [
@@ -9,12 +8,11 @@
         ])
 
         {{-- ── Page header ──────────────────────────────────────────── --}}
-        <div class="mt-3">
+        <div class="mt-3 mb-4">
             @include('relova::partials._page-header', [
                 'icon'     => 'M21.75 17.25v-.228a4.5 4.5 0 0 0-.12-1.03l-2.268-9.64a3.375 3.375 0 0 0-3.285-2.602H7.923a3.375 3.375 0 0 0-3.285 2.602l-2.268 9.64a4.5 4.5 0 0 0-.12 1.03v.228m19.5 0a3 3 0 0 1-3 3H5.25a3 3 0 0 1-3-3m19.5 0a3 3 0 0 0-3-3H5.25a3 3 0 0 0-3 3m16.5 0h.008v.008h-.008v-.008Zm-3 0h.008v.008h-.008v-.008Z',
                 'title'    => __('relova::ui.dashboard_title'),
                 'subtitle' => __('relova::ui.dashboard_subtitle'),
-                'actions'  => 'relova::partials._dashboard-actions',
             ])
         </div>
 
@@ -113,5 +111,4 @@
             @endif
 
         </article>
-    </div>
 </div>

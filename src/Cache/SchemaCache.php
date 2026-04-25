@@ -63,7 +63,8 @@ class SchemaCache
 
         $store = $this->cache->getStore();
         if (method_exists($store, 'connection')) {
-            $pattern = "relova:schema:{$connection->tenant_id}:{$connection->id}:columns:*";
+            $schemaSuffix = $this->schemaSegment($connection);
+            $pattern = "relova:schema:{$connection->tenant_id}:{$connection->id}{$schemaSuffix}:columns:*";
             try {
                 $redis = $store->connection();
                 $keys = $redis->keys($pattern);
@@ -80,12 +81,28 @@ class SchemaCache
 
     private function tablesKey(RelovaConnection $connection): string
     {
-        return "relova:schema:{$connection->tenant_id}:{$connection->id}:tables";
+        $schemaSuffix = $this->schemaSegment($connection);
+
+        return "relova:schema:{$connection->tenant_id}:{$connection->id}{$schemaSuffix}:tables";
     }
 
     private function columnsKey(RelovaConnection $connection, string $table): string
     {
-        return "relova:schema:{$connection->tenant_id}:{$connection->id}:columns:{$table}";
+        $schemaSuffix = $this->schemaSegment($connection);
+
+        return "relova:schema:{$connection->tenant_id}:{$connection->id}{$schemaSuffix}:columns:{$table}";
+    }
+
+    /**
+     * Return a cache-key segment that encodes the configured schema so that
+     * changing the schema on a connection immediately busts the cached result
+     * without requiring a manual flush.
+     */
+    private function schemaSegment(RelovaConnection $connection): string
+    {
+        $schema = trim((string) ($connection->options['schema'] ?? ''));
+
+        return $schema !== '' ? ':'.md5($schema) : '';
     }
 
     private function ttlFor(RelovaConnection $connection): int

@@ -63,45 +63,66 @@ class PostgreSqlDriver extends AbstractPdoDriver
 
     protected function getTablesQuery(array $config): string
     {
-        $schema = $config['schema'] ?? 'public';
+        $schema = str_replace("'", "''", $config['schema'] ?? 'public');
 
         return "SELECT
-            t.table_name,
-            t.table_schema,
-            t.table_type,
-            (SELECT reltuples::bigint FROM pg_class c
-             JOIN pg_namespace n ON n.oid = c.relnamespace
-             WHERE c.relname = t.table_name AND n.nspname = t.table_schema
+            t.tablename AS table_name,
+            t.schemaname AS table_schema,
+            'BASE TABLE' AS table_type,
+            (SELECT reltuples::bigint
+             FROM pg_catalog.pg_class c2
+             JOIN pg_catalog.pg_namespace n2 ON n2.oid = c2.relnamespace
+             WHERE c2.relname = t.tablename AND n2.nspname = t.schemaname
              LIMIT 1) AS row_count
-        FROM information_schema.tables t
-        WHERE t.table_schema = '{$schema}'
-        ORDER BY t.table_name";
+        FROM pg_catalog.pg_tables t
+        WHERE t.schemaname = '{$schema}'
+        UNION ALL
+        SELECT
+            v.viewname AS table_name,
+            v.schemaname AS table_schema,
+            'VIEW' AS table_type,
+            NULL::bigint AS row_count
+        FROM pg_catalog.pg_views v
+        WHERE v.schemaname = '{$schema}'
+        ORDER BY table_name";
     }
 
     protected function getColumnsQuery(string $table, array $config): string
     {
-        $schema = $config['schema'] ?? 'public';
+        $schema = str_replace("'", "''", $config['schema'] ?? 'public');
+        $table = str_replace("'", "''", $table);
 
         return "SELECT
-            c.column_name,
-            c.data_type,
-            c.is_nullable,
-            c.column_default,
-            c.character_maximum_length AS max_length,
-            c.numeric_precision,
-            CASE WHEN tc.constraint_type = 'PRIMARY KEY' THEN 'YES' ELSE 'NO' END AS is_primary
-        FROM information_schema.columns c
-        LEFT JOIN information_schema.key_column_usage kcu
-            ON c.column_name = kcu.column_name
-            AND c.table_name = kcu.table_name
-            AND c.table_schema = kcu.table_schema
-        LEFT JOIN information_schema.table_constraints tc
-            ON kcu.constraint_name = tc.constraint_name
-            AND kcu.table_schema = tc.table_schema
-            AND tc.constraint_type = 'PRIMARY KEY'
-        WHERE c.table_schema = '{$schema}'
-        AND c.table_name = '{$table}'
-        ORDER BY c.ordinal_position";
+            a.attname AS column_name,
+            pg_catalog.format_type(a.atttypid, a.atttypmod) AS data_type,
+            CASE a.attnotnull WHEN TRUE THEN 'NO' ELSE 'YES' END AS is_nullable,
+            pg_catalog.pg_get_expr(ad.adbin, ad.adrelid) AS column_default,
+            CASE
+                WHEN typ.typname IN ('bpchar', 'varchar') AND a.atttypmod > 0
+                THEN (a.atttypmod - 4)::integer
+                ELSE NULL
+            END AS max_length,
+            CASE
+                WHEN typ.typname = 'numeric' AND a.atttypmod > 0
+                THEN ((a.atttypmod - 4) >> 16)::integer
+                ELSE NULL
+            END AS numeric_precision,
+            CASE WHEN EXISTS (
+                SELECT 1 FROM pg_catalog.pg_constraint con
+                WHERE con.conrelid = c.oid
+                AND con.contype = 'p'
+                AND a.attnum = ANY(con.conkey)
+            ) THEN 'YES' ELSE 'NO' END AS is_primary
+        FROM pg_catalog.pg_attribute a
+        JOIN pg_catalog.pg_class c ON c.oid = a.attrelid
+        JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+        JOIN pg_catalog.pg_type typ ON typ.oid = a.atttypid
+        LEFT JOIN pg_catalog.pg_attrdef ad ON ad.adrelid = c.oid AND ad.adnum = a.attnum
+        WHERE n.nspname = '{$schema}'
+        AND c.relname = '{$table}'
+        AND a.attnum > 0
+        AND NOT a.attisdropped
+        ORDER BY a.attnum";
     }
 
     protected function normalizeTables(array $rawTables): array

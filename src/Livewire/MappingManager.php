@@ -245,7 +245,7 @@ class MappingManager extends Component
             return [];
         }
 
-        $skip = ['id', 'uid', 'created_at', 'updated_at', 'deleted_at', 'premises_id', 'tenant_id'];
+        $skip = ['id', 'uid', 'created_at', 'updated_at', 'deleted_at', 'tenant_id'];
 
         try {
             $rows = DB::select(
@@ -744,6 +744,7 @@ class MappingManager extends Component
             'premises_id'     => ['table' => 'premises',      'label_col' => 'premises_name'],
             'category_id'     => ['table' => 'categories',    'label_col' => 'category_name'],
             'priority_id'     => ['table' => 'priorities',    'label_col' => 'priority_name'],
+            'unit_id'         => ['table' => 'units',         'label_col' => 'unit_name'],
         ];
 
         $result = [];

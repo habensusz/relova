@@ -51,6 +51,14 @@ trait HasVirtualEntityFallback
      */
     public function resolveRouteBinding($value, $field = null): static|VirtualEntityProxy
     {
+        // Livewire's SupportPageComponents re-runs implicit route binding after the
+        // initial resolution. By that point the route parameter is already the resolved
+        // object, not the raw URL string. Return it directly to avoid passing the
+        // proxy into a SQL WHERE clause which causes a PDO type-conversion error.
+        if ($value instanceof VirtualEntityProxy) {
+            return $value;
+        }
+
         $key = $field ?? $this->getRouteKeyName();
         $eagerLoads = $this->relovaRouteBindingWith();
 

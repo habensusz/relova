@@ -8,10 +8,14 @@ use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Relova\Exceptions\ConnectionException;
+use Relova\Models\ConnectorModuleMapping;
 use Relova\Models\RelovaConnection;
+use Relova\Models\VirtualEntityReference;
 use Relova\Security\CredentialEncryptor;
 use Relova\Services\ConnectionRegistry;
 use Relova\Services\DriverRegistry;
+use Relova\Services\SchemaInspector;
+use Relova\Services\SyncEngine;
 use Throwable;
 
 /**
@@ -133,7 +137,7 @@ class ConnectionManager extends Component
         $this->showForm = false;
     }
 
-    public function save(CredentialEncryptor $encryptor): void
+    public function save(CredentialEncryptor $encryptor, SchemaInspector $inspector, SyncEngine $syncEngine): void
     {
         $this->validate([
             'name' => 'required|string|max:255',
@@ -187,20 +191,41 @@ class ConnectionManager extends Component
                 ->where('uid', $this->editingUid)
                 ->firstOrFail();
 
-            // Only update credentials if user supplied new ones (or key changed)
-            if ($this->username !== '' || $this->password !== '' || $this->sshPrivateKey !== '') {
+            // When editing, merge with existing credentials so that leaving a field
+            // blank does not wipe a previously stored value (e.g. SSH private key).
+            if ($this->username !== '' || $this->password !== '' || $this->sshPrivateKey !== '' || $this->sshPassphrase !== '') {
+                $existing = $connection->credentials();
                 $payload['credentials_encrypted'] = $encryptor->encrypt(
                     [
-                        'username' => $this->username,
-                        'password' => $this->password,
-                        'ssh_private_key' => $this->sshPrivateKey,
-                        'ssh_passphrase' => $this->sshPassphrase,
+                        'username' => $this->username !== '' ? $this->username : ($existing['username'] ?? ''),
+                        'password' => $this->password !== '' ? $this->password : ($existing['password'] ?? ''),
+                        'ssh_private_key' => $this->sshPrivateKey !== '' ? $this->sshPrivateKey : ($existing['ssh_private_key'] ?? ''),
+                        'ssh_passphrase' => $this->sshPassphrase !== '' ? $this->sshPassphrase : ($existing['ssh_passphrase'] ?? ''),
                     ],
                     $this->tenantId,
                 );
             }
 
             $connection->update($payload);
+
+            // Invalidate schema cache, purge stale VirtualEntityReference rows,
+            // and trigger a fresh sync for all active mappings on this connection
+            // so stale remote data does not persist after host/schema changes.
+            $fresh = $connection->fresh();
+            $inspector->invalidate($fresh);
+
+            $mappings = ConnectorModuleMapping::query()
+                ->where('connection_id', $connection->id)
+                ->get();
+
+            foreach ($mappings as $mapping) {
+                VirtualEntityReference::where('mapping_id', $mapping->id)->delete();
+                $syncEngine->invalidate($mapping);
+
+                if ($mapping->active && $mapping->sync_behavior !== 'on_demand') {
+                    dispatch(fn () => $syncEngine->forceSync($mapping))->afterResponse();
+                }
+            }
         } else {
             $payload['credentials_encrypted'] = $encryptor->encrypt(
                 [

@@ -77,8 +77,8 @@
                                                     <select wire:model.live="moduleKey"
                                                         class="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl text-sm text-zinc-900 dark:text-gray-100 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:focus:border-sky-400 transition-colors">
                                                         <option value="">— Select —</option>
-                                                        @foreach ($localTables as $tbl)
-                                                            <option value="{{ $tbl }}">{{ $tbl }}</option>
+                                                        @foreach ($moduleOptions as $opt)
+                                                            <option value="{{ $opt['key'] }}">{{ $opt['key'] }}</option>
                                                         @endforeach
                                                     </select>
                                                     <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-1">{{ __('relova::ui.module_key_hint') }}</p>

@@ -213,8 +213,21 @@ class MappingManager extends Component
             }
 
             $this->fieldMappingRows = [];
+            $mandatory = $consumer->mandatoryFields();
+
+            // Mandatory fields always come first.
+            foreach ($mandatory as $localField) {
+                $mappings = $consumer->defaultFieldMappings();
+                $this->fieldMappingRows[] = [
+                    'local' => $localField,
+                    'remote' => (string) ($mappings[$localField] ?? ''),
+                ];
+            }
 
             foreach ($consumer->defaultFieldMappings() as $local => $remote) {
+                if (in_array($local, $mandatory, true)) {
+                    continue; // Already added above.
+                }
                 $this->fieldMappingRows[] = ['local' => (string) $local, 'remote' => (string) $remote];
             }
 
@@ -326,6 +339,14 @@ class MappingManager extends Component
 
     public function removeFieldRow(int $index): void
     {
+        // Prevent mandatory field rows from being removed.
+        $mandatory = $this->getMandatoryLocalFields();
+        $localKey = $this->fieldMappingRows[$index]['local'] ?? '';
+
+        if ($mandatory !== [] && in_array($localKey, $mandatory, true)) {
+            return;
+        }
+
         array_splice($this->fieldMappingRows, $index, 1);
 
         if (empty($this->fieldMappingRows)) {
@@ -485,7 +506,20 @@ class MappingManager extends Component
         $fieldMappings = $mapping->field_mappings ?? [];
         $this->fieldMappingRows = [];
 
+        // Determine mandatory fields for this module (if a consumer is registered).
+        $mandatory = $this->getMandatoryLocalFieldsFor($this->moduleKey);
+
+        // Mandatory rows first, then the rest.
+        foreach ($mandatory as $localField) {
+            $this->fieldMappingRows[] = [
+                'local' => $localField,
+                'remote' => (string) ($fieldMappings[$localField] ?? ''),
+            ];
+        }
         foreach ($fieldMappings as $local => $remote) {
+            if (in_array($local, $mandatory, true)) {
+                continue;
+            }
             $this->fieldMappingRows[] = ['local' => (string) $local, 'remote' => (string) $remote];
         }
 
@@ -639,6 +673,39 @@ class MappingManager extends Component
         $this->showForm = false;
     }
 
+    // ── Mandatory field helpers ──────────────────────────────────────────────
+
+    /**
+     * Return the mandatory local field names for the currently selected module key.
+     *
+     * @return array<int, string>
+     */
+    private function getMandatoryLocalFields(): array
+    {
+        return $this->getMandatoryLocalFieldsFor($this->moduleKey);
+    }
+
+    /**
+     * Return the mandatory local field names for a specific module key.
+     *
+     * @return array<int, string>
+     */
+    private function getMandatoryLocalFieldsFor(string $moduleKey): array
+    {
+        if ($moduleKey === '') {
+            return [];
+        }
+
+        foreach (app()->tagged('relova.module_consumers') as $consumer) {
+            /** @var ModuleDataConsumer $consumer */
+            if ($consumer->moduleKey() === $moduleKey) {
+                return $consumer->mandatoryFields();
+            }
+        }
+
+        return [];
+    }
+
     private function resetForm(): void
     {
         $this->editing = false;
@@ -696,6 +763,8 @@ class MappingManager extends Component
             ->values()
             ->all();
 
+        $mandatoryLocalFields = $this->getMandatoryLocalFields();
+
         // Merge primary-table columns and all joined-table columns for pickers.
         $allColumns = $this->remoteColumns;
         foreach ($this->joinedTableColumns as $joinTable => $joinCols) {
@@ -718,6 +787,7 @@ class MappingManager extends Component
             'localColumns' => $this->localColumns,
             'localFkOptions' => $localFkOptions,
             'localFkColumns' => $localFkColumns,
+            'mandatoryLocalFields' => $mandatoryLocalFields,
         ]);
     }
 

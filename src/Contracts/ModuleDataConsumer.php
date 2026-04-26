@@ -36,4 +36,12 @@ interface ModuleDataConsumer
      * @return array<string, string>
      */
     public function defaultFieldMappings(): array;
+
+    /**
+     * Local field names that are required and must always be mapped.
+     * These rows appear first in the mapping form and cannot be removed.
+     *
+     * @return array<int, string>
+     */
+    public function mandatoryFields(): array;
 }

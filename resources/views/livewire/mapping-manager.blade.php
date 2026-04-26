@@ -151,7 +151,8 @@
                                                 </div>
                                                 <div class="space-y-2">
                                                     @foreach ($fieldMappingRows as $i => $row)
-                                                        <div wire:key="frow-{{ $i }}" class="grid grid-cols-[1fr_auto_1fr_2rem] items-center gap-2">
+                                                        @php $isMandatory = in_array($row['local'] ?? '', $mandatoryLocalFields ?? [], true); @endphp
+                                                        <div wire:key="frow-{{ $i }}" class="grid grid-cols-[1fr_auto_1fr_2rem] items-center gap-2 {{ $isMandatory ? 'bg-amber-50/50 dark:bg-amber-900/10 rounded-lg px-1 ring-1 ring-amber-200 dark:ring-amber-700/40' : '' }}">
                                                             @if (count((array)$allColumns) > 0)
                                                                 <select wire:model="fieldMappingRows.{{ $i }}.remote"
                                                                     class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-zinc-900 dark:text-gray-100 font-mono focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:focus:border-sky-400">
@@ -167,7 +168,8 @@
                                                             <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/></svg>
                                                             @if (count((array)$localColumns) > 0)
                                                                 <select wire:model="fieldMappingRows.{{ $i }}.local"
-                                                                    class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-zinc-900 dark:text-gray-100 font-mono focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:focus:border-sky-400">
+                                                                    @disabled($isMandatory)
+                                                                    class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-zinc-900 dark:text-gray-100 font-mono focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:focus:border-sky-400 {{ $isMandatory ? 'opacity-70 cursor-not-allowed' : '' }}">
                                                                     <option value="">— local field —</option>
                                                                     @foreach ($localColumns as $lcol)
                                                                         <option value="{{ $lcol }}">{{ $lcol }}</option>
@@ -175,10 +177,17 @@
                                                                 </select>
                                                             @else
                                                                 <input wire:model="fieldMappingRows.{{ $i }}.local" type="text" placeholder="local_field"
-                                                                    class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-zinc-900 dark:text-gray-100 font-mono focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:focus:border-sky-400" />
+                                                                    @disabled($isMandatory)
+                                                                    class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-zinc-900 dark:text-gray-100 font-mono focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:focus:border-sky-400 {{ $isMandatory ? 'opacity-70 cursor-not-allowed' : '' }}" />
                                                             @endif
-                                                            <button type="button" wire:click="removeFieldRow({{ $i }})"
-                                                                class="flex items-center justify-center w-8 h-8 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">&times;</button>
+                                                            @if ($isMandatory)
+                                                                <span class="flex items-center justify-center w-8 h-8 shrink-0" title="Required field">
+                                                                    <svg class="w-4 h-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"/></svg>
+                                                                </span>
+                                                            @else
+                                                                <button type="button" wire:click="removeFieldRow({{ $i }})"
+                                                                    class="flex items-center justify-center w-8 h-8 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">&times;</button>
+                                                            @endif
                                                         </div>
                                                     @endforeach
                                                 </div>

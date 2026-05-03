@@ -42,10 +42,10 @@ use Relova\Services\FormFieldMerger;
 use Relova\Services\QueryExecutor;
 use Relova\Services\ReferenceResolver;
 use Relova\Services\SchemaInspector;
-use Relova\Services\ShadowSyncService;
-use Relova\Services\SnapshotManager;
+use Relova\Services\ShadowSyncService;use Relova\Services\SnapshotManager;
 use Relova\Services\SshTunnelService;
 use Relova\Services\SyncEngine;
+use Relova\Services\TriggerRuleEngine;
 use Relova\Services\VirtualDataService;
 use Relova\Services\VirtualEntityResolver;
 use Stancl\Tenancy\Events\TenancyEnded;
@@ -127,8 +127,13 @@ class RelovaServiceProvider extends ServiceProvider
         });
 
         $this->app->singleton(ShadowSyncService::class, function ($app) {
-            return new ShadowSyncService($app->make(QueryExecutor::class));
+            return new ShadowSyncService(
+                $app->make(QueryExecutor::class),
+                $app->make(TriggerRuleEngine::class),
+            );
         });
+
+        $this->app->singleton(TriggerRuleEngine::class);
 
         $this->app->singleton(VirtualDataService::class, function ($app) {
             return new VirtualDataService($app->make(ShadowSyncService::class));

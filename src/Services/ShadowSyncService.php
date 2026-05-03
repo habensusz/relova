@@ -22,6 +22,7 @@ class ShadowSyncService
 {
     public function __construct(
         private QueryExecutor $queryExecutor,
+        private ?TriggerRuleEngine $triggerEngine = null,
     ) {}
 
     public function syncMapping(ConnectorModuleMapping $mapping): SyncResult
@@ -80,6 +81,7 @@ class ShadowSyncService
                 ])->first();
 
                 if ($existing) {
+                    $previousSnapshot = $existing->display_snapshot ?? [];
                     $existing->update([
                         'mapping_id' => $mapping->id,
                         'display_snapshot' => $enrichedRow,
@@ -87,8 +89,12 @@ class ShadowSyncService
                         'snapshot_status' => 'fresh',
                     ]);
                     $updated++;
+
+                    if ($this->triggerEngine !== null) {
+                        $this->triggerEngine->evaluate($existing->fresh(), $previousSnapshot, $enrichedRow);
+                    }
                 } else {
-                    VirtualEntityReference::create([
+                    $newRef = VirtualEntityReference::create([
                         'tenant_id' => $mapping->tenant_id,
                         'connection_id' => $connection->id,
                         'mapping_id' => $mapping->id,
@@ -100,6 +106,13 @@ class ShadowSyncService
                         'snapshot_status' => 'fresh',
                     ]);
                     $created++;
+
+                    if ($this->triggerEngine !== null) {
+                        // First sync — empty previous snapshot. Rules using
+                        // operators like 'changed' won't fire (oldValue===newValue===null
+                        // for missing fields), but threshold rules will.
+                        $this->triggerEngine->evaluate($newRef, [], $enrichedRow);
+                    }
                 }
             } catch (\Throwable $e) {
                 $errors++;

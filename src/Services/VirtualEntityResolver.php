@@ -105,6 +105,8 @@ class VirtualEntityResolver
      * @param  int  $page  1-based page number.
      * @param  int  $perPage  Items per page.
      * @param  string|null  $search  Optional search term applied to snapshot values.
+     * @param  int|null  $premisesId  When set, only references belonging to this premises
+     *                                (or global mappings with premises_id = null) are returned.
      * @return array{items: VirtualEntityProxy[], total: int, per_page: int, current_page: int}
      */
     public function virtualRowsForModule(
@@ -113,16 +115,25 @@ class VirtualEntityResolver
         int $page = 1,
         int $perPage = 15,
         ?string $search = null,
+        ?int $premisesId = null,
     ): array {
         $query = VirtualEntityReference::with('mapping')
-            ->where(function ($q) use ($moduleKey): void {
-                // Primary: match via mapping relationship (records where mapping_id is set).
-                $q->whereHas('mapping', fn ($inner) => $inner->where('module_key', $moduleKey))
+            ->where(function ($q) use ($moduleKey, $premisesId): void {
+                // Primary: match via mapping relationship, scoped to current premises.
+                // Global mappings (premises_id = null) are visible to all premises.
+                $q->whereHas('mapping', function ($inner) use ($moduleKey, $premisesId): void {
+                    $inner->where('module_key', $moduleKey);
+                    if ($premisesId !== null) {
+                        $inner->where(fn ($m) => $m->where('premises_id', $premisesId)->orWhereNull('premises_id'));
+                    }
+                })
                     // Fallback: records synced before mapping_id column was populated or before
-                    // the current mapping existed. We match by remote_table instead so that
-                    // pre-existing snapshots are not hidden after a mapping is recreated.
-                    ->orWhere(function ($inner) use ($moduleKey): void {
-                        $inner->whereNull('mapping_id')->where('remote_table', $moduleKey);
+                    // the current mapping existed. Only included when no premises filter is
+                    // active — without a mapping there is no premises context to check.
+                    ->orWhere(function ($inner) use ($moduleKey, $premisesId): void {
+                        if ($premisesId === null) {
+                            $inner->whereNull('mapping_id')->where('remote_table', $moduleKey);
+                        }
                     });
             })
             ->when($tenantId, fn ($q) => $q->where('tenant_id', $tenantId))

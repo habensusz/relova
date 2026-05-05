@@ -33,6 +33,10 @@ return new class extends Migration
 
             // Last-known display fields. Not authoritative. Not a data copy.
             $table->jsonb('display_snapshot')->default('{}');
+            // Per-entity local relationship overrides (e.g. location_id, manufacturer_id).
+            // Takes priority over ConnectorModuleMapping::default_values in VirtualEntityProxy::__get().
+            // Format: { "location_id": 5, "manufacturer_id": 3 }
+            $table->jsonb('local_overrides')->default('{}');
             $table->timestamp('snapshot_taken_at')->nullable();
             $table->enum('snapshot_status', ['fresh', 'stale', 'unavailable'])->default('stale');
 

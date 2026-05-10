@@ -14,6 +14,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('uid', 22)->unique();
             $table->string('tenant_id')->index();
+            $table->unsignedInteger('premises_id')->nullable()->index();
 
             $table->string('name');
             $table->text('description')->nullable();

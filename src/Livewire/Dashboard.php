@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Relova\Livewire;
 
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Relova\Models\ConnectorModuleMapping;
@@ -21,6 +22,9 @@ use Relova\Models\VirtualEntityReference;
 class Dashboard extends Component
 {
     public string $tenantId = '';
+
+    /** The active premises ID taken from the authenticated user. Null = no premises filter. */
+    public ?int $premisesId = null;
 
     public int $totalConnections = 0;
 
@@ -53,12 +57,28 @@ class Dashboard extends Component
             $this->tenantId = (string) tenant('id');
         }
 
+        $this->premisesId = Auth::user()?->premises_id;
+
         $this->loadStats();
     }
 
     private function loadStats(): void
     {
-        $connectionQuery = RelovaConnection::query()->where('tenant_id', $this->tenantId);
+        // Mappings scoped to the active premises (or global ones).
+        $premisesMappingQuery = ConnectorModuleMapping::query()
+            ->where('tenant_id', $this->tenantId)
+            ->when($this->premisesId !== null, fn ($q) => $q->where(function ($inner) {
+                $inner->where('premises_id', $this->premisesId)->orWhereNull('premises_id');
+            }));
+
+        $this->totalMappings = (clone $premisesMappingQuery)->count();
+
+        // Connections scoped directly by their own premises_id (or global ones with NULL).
+        $connectionQuery = RelovaConnection::query()
+            ->where('tenant_id', $this->tenantId)
+            ->when($this->premisesId !== null, fn ($q) => $q->where(function ($inner) {
+                $inner->where('premises_id', $this->premisesId)->orWhereNull('premises_id');
+            }));
 
         $this->totalConnections = (clone $connectionQuery)->count();
         $this->activeConnections = (clone $connectionQuery)->where('status', 'active')->count();
@@ -67,11 +87,12 @@ class Dashboard extends Component
             ->whereIn('status', ['error', 'unreachable'])
             ->count();
 
-        $this->totalMappings = ConnectorModuleMapping::query()
-            ->where('tenant_id', $this->tenantId)
-            ->count();
+        // Virtual references scoped via their mapping to the active premises.
+        $mappingIds = (clone $premisesMappingQuery)->pluck('id')->all();
 
-        $referenceQuery = VirtualEntityReference::query()->where('tenant_id', $this->tenantId);
+        $referenceQuery = VirtualEntityReference::query()
+            ->where('tenant_id', $this->tenantId)
+            ->when(! empty($mappingIds), fn ($q) => $q->whereIn('mapping_id', $mappingIds));
 
         $this->totalReferences = (clone $referenceQuery)->count();
         $this->freshSnapshots = (clone $referenceQuery)->where('snapshot_status', 'fresh')->count();

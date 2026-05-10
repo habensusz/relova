@@ -755,6 +755,9 @@ class MappingManager extends Component
 
         $connections = RelovaConnection::query()
             ->where('tenant_id', $this->tenantId)
+            ->when($this->premisesId !== null, fn ($q) => $q->where(function ($inner) {
+                $inner->where('premises_id', $this->premisesId)->orWhereNull('premises_id');
+            }))
             ->orderBy('name')
             ->get(['uid', 'name', 'driver']);
 

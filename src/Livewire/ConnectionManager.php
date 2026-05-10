@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Relova\Livewire;
 
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -32,6 +33,9 @@ use Throwable;
 class ConnectionManager extends Component
 {
     public string $tenantId = '';
+
+    /** The active premises ID taken from the authenticated user at mount time. Null = no filter. */
+    public ?int $premisesId = null;
 
     public string $search = '';
 
@@ -88,6 +92,7 @@ class ConnectionManager extends Component
     public function mount(DriverRegistry $drivers): void
     {
         $this->tenantId = (string) (function_exists('tenant') && tenant() ? tenant('id') : '');
+        $this->premisesId = Auth::user()?->premises_id;
         $this->availableDrivers = collect($drivers->getRegistered())
             ->mapWithKeys(fn ($_, $key) => [$key => Str::headline($key)])
             ->all();
@@ -237,6 +242,10 @@ class ConnectionManager extends Component
                 $this->tenantId,
             );
 
+            // Stamp the active premises on create so this connection is only
+            // visible when that premises is active.
+            $payload['premises_id'] = $this->premisesId;
+
             RelovaConnection::query()->create($payload);
         }
 
@@ -313,6 +322,9 @@ class ConnectionManager extends Component
     {
         $connections = RelovaConnection::query()
             ->where('tenant_id', $this->tenantId)
+            ->when($this->premisesId !== null, fn ($q) => $q->where(function ($inner) {
+                $inner->where('premises_id', $this->premisesId)->orWhereNull('premises_id');
+            }))
             ->when($this->search !== '', fn ($q) => $q->where(function ($q) {
                 $q->where('name', 'ilike', '%'.$this->search.'%')
                     ->orWhere('host', 'ilike', '%'.$this->search.'%')

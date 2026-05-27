@@ -175,7 +175,7 @@
                                                 </thead>
                                                 <tbody>
                                                     @foreach ($columns as $col)
-                                                        <tr class="border-b border-gray-100 dark:border-gray-700/60 last:border-b-0 odd:bg-white even:bg-gray-50/60 dark:odd:bg-gray-800 dark:even:bg-gray-700/30 hover:bg-sky-50 dark:hover:bg-gray-700/60 transition-colors">
+                                                        <tr class="border-b border-gray-100 dark:border-gray-700/60 last:border-b-0 even:bg-gray-50/60 dark:even:bg-gray-700/30 hover:bg-sky-50 dark:hover:bg-gray-700/60 transition-colors">
                                                             <td class="px-5 py-2.5">
                                                                 <div class="flex items-center gap-1.5">
                                                                     @if ($col['primary'] ?? false)
@@ -239,7 +239,7 @@
                                                 </thead>
                                                 <tbody>
                                                     @foreach ($previewRows as $row)
-                                                        <tr class="border-b border-gray-100 dark:border-gray-700/60 last:border-b-0 odd:bg-white even:bg-gray-50/60 dark:odd:bg-gray-800 dark:even:bg-gray-700/30 hover:bg-sky-50 dark:hover:bg-gray-700/60 transition-colors">
+                                                        <tr class="border-b border-gray-100 dark:border-gray-700/60 last:border-b-0 even:bg-gray-50/60 dark:even:bg-gray-700/30 hover:bg-sky-50 dark:hover:bg-gray-700/60 transition-colors">
                                                             @foreach ($row as $val)
                                                                 <td class="px-4 py-2 font-mono text-zinc-700 dark:text-gray-300 whitespace-nowrap max-w-[200px] truncate"
                                                                     title="{{ is_scalar($val) ? (string) $val : json_encode($val) }}">

@@ -32,7 +32,10 @@ class SyncMappingJob implements ShouldQueue
     public function __construct(
         private ConnectorModuleMapping $mapping,
     ) {
-        $this->onQueue((string) config('relova.sync_queue', 'relova-sync'));
+        $queue = config('relova.sync_queue');
+        if ($queue) {
+            $this->onQueue((string) $queue);
+        }
     }
 
     public function handle(SyncEngine $sync): void

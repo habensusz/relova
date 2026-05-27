@@ -10,10 +10,10 @@ use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Relova\Contracts\ModuleDataConsumer;
+use Relova\Jobs\SyncMappingJob;
 use Relova\Models\ConnectorModuleMapping;
 use Relova\Models\RelovaConnection;
 use Relova\Services\SchemaInspector;
-use Relova\Services\SyncEngine;
 
 #[Layout('components.layouts.app')]
 class MappingManager extends Component
@@ -641,8 +641,10 @@ class MappingManager extends Component
 
             // Kick off an initial sync immediately so remote rows appear without waiting
             // for the first page load to trigger autoSyncForTableAsync.
+            // Use SyncMappingJob (not a closure) so the job sets its own relova.current_tenant
+            // context — afterResponse() closures run after TenancyEnded clears the binding.
             if ($newMapping->active && $newMapping->sync_behavior !== 'on_demand') {
-                dispatch(fn () => app(SyncEngine::class)->forceSync($newMapping))->afterResponse();
+                SyncMappingJob::dispatch($newMapping);
             }
         }
 

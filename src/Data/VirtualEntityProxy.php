@@ -6,6 +6,7 @@ namespace Relova\Data;
 
 use Illuminate\Support\Fluent;
 use Illuminate\Support\Str;
+use Livewire\Wireable;
 use Relova\Models\ConnectorModuleMapping;
 use Relova\Models\VirtualEntityReference;
 use Relova\Services\QueryExecutor;
@@ -26,8 +27,12 @@ use Relova\Services\QueryExecutor;
  *
  * Property reads use field_mappings to translate local→remote column names:
  *   $proxy->machine_model    → snapshot['model_name'] (if mapping says so)
+ *
+ * Implements Livewire\Wireable so that Livewire 3/4 can serialize and
+ * re-hydrate this proxy between AJAX requests without needing to reconstruct
+ * the full object from its readonly constructor properties.
  */
-class VirtualEntityProxy
+class VirtualEntityProxy implements Wireable
 {
     /** @var array<string, mixed>|null  Lazily-populated live row from remote. */
     private ?array $liveRow = null;
@@ -253,6 +258,33 @@ class VirtualEntityProxy
 
         /** @phpstan-ignore-next-line */
         return \App\Models\Location::find($locationId)?->premises_id;
+    }
+
+    // ── Livewire\Wireable ────────────────────────────────────────────────────
+
+    /**
+     * Dehydrate to a minimal array so Livewire can store this proxy in its
+     * component snapshot without trying to serialize readonly constructor deps.
+     */
+    public function toLivewire(): array
+    {
+        return [
+            'ref_uid'     => $this->relova_ref->uid,
+            'mapping_uid' => $this->mapping->uid,
+        ];
+    }
+
+    /**
+     * Reconstruct from the dehydrated snapshot on each Livewire AJAX request.
+     * relova.current_tenant is already bound at this point (RelovaServiceProvider
+     * listens to TenancyInitialized on every tenant web request).
+     */
+    public static function fromLivewire($value): static
+    {
+        $ref     = VirtualEntityReference::where('uid', $value['ref_uid'])->firstOrFail();
+        $mapping = ConnectorModuleMapping::where('uid', $value['mapping_uid'])->firstOrFail();
+
+        return new static($ref, $mapping, app(QueryExecutor::class));
     }
 
     /**

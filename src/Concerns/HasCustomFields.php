@@ -96,11 +96,15 @@ trait HasCustomFields
      */
     public function getCustomField(string $name): mixed
     {
-        // Fast path: read from JSONB snapshot
+        // Fast path: read from JSONB snapshot. A key missing from the snapshot
+        // still falls back to EAV — values written directly to the EAV table
+        // (imports, older writes) must stay readable.
         if ($this->hasCustomFieldsColumn()) {
             $snapshot = $this->custom_fields ?? [];
 
-            return $snapshot[$name] ?? null;
+            if (array_key_exists($name, $snapshot)) {
+                return $snapshot[$name];
+            }
         }
 
         // Fallback: read from EAV
@@ -231,15 +235,27 @@ trait HasCustomFields
         if ($driver === 'pgsql') {
             $jsonPatch = json_encode([$name => $value], JSON_THROW_ON_ERROR);
 
-            $this->getConnection()
-                ->table($this->getTable())
-                ->where($this->getKeyName(), $this->getKey())
-                ->update([
-                    'custom_fields' => $this->getConnection()->raw(
-                        'custom_fields || ?::jsonb',
-                        [$jsonPatch],
-                    ),
-                ]);
+            // NOTE: DB::raw() takes no bindings — a `?` placeholder inside a raw
+            // update value corrupts the parameter order. Use a raw statement so
+            // both the patch and the key bind correctly, and COALESCE so a NULL
+            // snapshot doesn't swallow the merge.
+            // Snapshots persisted as `[]` (a JSON array — e.g. an empty PHP array
+            // cast) would array-append instead of merging, so coerce anything
+            // that isn't a JSON object to '{}' before the merge.
+            $this->getConnection()->statement(
+                sprintf(
+                    <<<'SQL'
+                    update %s set custom_fields =
+                        (case when jsonb_typeof(coalesce(custom_fields, '{}'::jsonb)) = 'object'
+                              then custom_fields
+                              else '{}'::jsonb end) || ?::jsonb
+                    where %s = ?
+                    SQL,
+                    $this->getTable(),
+                    $this->getKeyName(),
+                ),
+                [$jsonPatch, $this->getKey()],
+            );
         } else {
             $snapshot = $this->custom_fields ?? [];
             $snapshot[$name] = $value;

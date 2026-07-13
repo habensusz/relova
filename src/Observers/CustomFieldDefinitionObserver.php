@@ -104,7 +104,7 @@ class CustomFieldDefinitionObserver
     {
         // Use PostgreSQL's - operator for JSONB key removal in batches
         DB::table($table)
-            ->whereRaw('custom_fields ? ?', [$fieldName])
+            ->whereRaw('jsonb_exists(custom_fields, ?)', [$fieldName]) // pg's ? operator conflicts with PDO placeholders
             ->chunkById(500, function ($records) use ($table, $fieldName): void {
                 DB::table($table)
                     ->whereIn('id', $records->pluck('id'))

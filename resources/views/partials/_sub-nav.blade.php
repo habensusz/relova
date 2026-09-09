@@ -2,7 +2,7 @@
     Relova section sub-navigation strip.
 
     Required:
-        $active   string   One of: overview | connections | mappings | schema
+        $active   string   One of: overview | connections | mappings | triggers | schema
 --}}
 @php
     $active = $active ?? 'overview';
@@ -10,11 +10,13 @@
     $relovaUrl = tenancy()->initialized ? tenant()->route('relova.dashboard') : route('relova.dashboard');
     $connectionsUrl = tenancy()->initialized ? tenant()->route('relova.connections.index') : route('relova.connections.index');
     $mappingsUrl = tenancy()->initialized ? tenant()->route('relova.mappings.index') : route('relova.mappings.index');
+    $triggersUrl = tenancy()->initialized ? tenant()->route('relova.triggers.index') : route('relova.triggers.index');
 
     $tabs = [
         ['key' => 'overview',    'label' => __('relova::ui.tab_overview'),    'url' => $relovaUrl],
         ['key' => 'connections', 'label' => __('relova::ui.tab_connections'), 'url' => $connectionsUrl],
         ['key' => 'mappings',    'label' => __('relova::ui.tab_mappings'),    'url' => $mappingsUrl],
+        ['key' => 'triggers',    'label' => __('relova::ui.tab_triggers'),    'url' => $triggersUrl],
     ];
 
     if ($active === 'schema') {

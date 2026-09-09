@@ -19,6 +19,7 @@ use Relova\Livewire\CustomFieldManager;
 use Relova\Livewire\Dashboard as RelovaDashboard;
 use Relova\Livewire\MappingManager;
 use Relova\Livewire\SchemaBrowser;
+use Relova\Livewire\TriggerRuleManager;
 use Relova\Livewire\WidgetConfigEditor;
 use Relova\Models\CustomFieldDefinition;
 use Relova\Models\CustomFieldWidgetConfig;
@@ -42,7 +43,8 @@ use Relova\Services\FormFieldMerger;
 use Relova\Services\QueryExecutor;
 use Relova\Services\ReferenceResolver;
 use Relova\Services\SchemaInspector;
-use Relova\Services\ShadowSyncService;use Relova\Services\SnapshotManager;
+use Relova\Services\ShadowSyncService;
+use Relova\Services\SnapshotManager;
 use Relova\Services\SshTunnelService;
 use Relova\Services\SyncEngine;
 use Relova\Services\TriggerRuleEngine;
@@ -265,6 +267,7 @@ class RelovaServiceProvider extends ServiceProvider
             Livewire::component('relova-connection-manager', ConnectionManager::class);
             Livewire::component('relova-schema-browser', SchemaBrowser::class);
             Livewire::component('relova-mapping-manager', MappingManager::class);
+            Livewire::component('relova-trigger-rule-manager', TriggerRuleManager::class);
         }
     }
 }

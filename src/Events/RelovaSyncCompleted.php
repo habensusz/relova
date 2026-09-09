@@ -33,6 +33,15 @@ class RelovaSyncCompleted implements ShouldBroadcast
         return new PrivateChannel('relova.'.$this->tenantId);
     }
 
+    /**
+     * Short, stable name for client listeners: `.RelovaSyncCompleted`
+     * (the leading dot tells Laravel Echo not to namespace it).
+     */
+    public function broadcastAs(): string
+    {
+        return 'RelovaSyncCompleted';
+    }
+
     public function broadcastWith(): array
     {
         return ['module_key' => $this->moduleKey];

@@ -88,13 +88,37 @@ class CustomFieldDefinition extends Model
     /**
      * Get active definitions for an entity type, cached until busted.
      *
+     * Self-heals a poisoned entry: rememberForever() persists indefinitely,
+     * so if unserialize() ever hands back a __PHP_Incomplete_Class (stale
+     * class definition from a previous deploy, dev-main package drift, etc.)
+     * the stored value fails the Collection<static> shape and gets refetched
+     * instead of throwing a TypeError on every request.
+     *
      * @return Collection<int, static>
      */
     public static function cachedForEntity(string $entityType): Collection
     {
-        return Cache::rememberForever(
-            RelovaCacheKeys::definitions($entityType),
+        $key = RelovaCacheKeys::definitions($entityType);
+        $cached = Cache::get($key);
+
+        if (! static::isValidDefinitionsCollection($cached)) {
+            Cache::forget($key);
+            $cached = null;
+        }
+
+        return $cached ?? Cache::rememberForever(
+            $key,
             fn () => static::forEntity($entityType)->get(),
         );
+    }
+
+    /**
+     * Whether a cached value is a genuine Collection of hydrated instances,
+     * as opposed to a __PHP_Incomplete_Class produced by a failed unserialize.
+     */
+    protected static function isValidDefinitionsCollection(mixed $value): bool
+    {
+        return $value instanceof Collection
+            && $value->every(fn ($item) => $item instanceof static);
     }
 }
